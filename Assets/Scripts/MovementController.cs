@@ -65,14 +65,29 @@ public class MovementController : MonoBehaviour {
         if(vel != Vector3.zero)
         {
             //gameObject.transform.forward = vel.normalized;
-            if(currState != movementState.sneak)
+
+            //set our foward direction if in run state
+            if (currState != movementState.sneak && currState != movementState.crawl)
             {
                 body.transform.rotation = Quaternion.LookRotation(vel.normalized);
             }
+
+            //set look direction in crawl mode, unless snake is backing up
             if(currState == movementState.crawl)
             {
                 body.transform.Rotate(new Vector3(90f, 0f, 0f));
+                float velAngleFromCurrent = Vector3.Angle(body.transform.forward, vel);
+                if (Mathf.Approximately(velAngleFromCurrent, 180f) || Mathf.Approximately(velAngleFromCurrent, 0f))
+                {
+                    body.transform.Rotate(new Vector3(-90f, 0f, 0f));
+                } else
+                {
+                    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+                    body.transform.Rotate(new Vector3(90f, 0f, 0f));
+                }
             }
+
+            //check for wall collision to stick to
             if(Physics.Raycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f) && collided > 0)
             {
                 collided -= Time.deltaTime;
