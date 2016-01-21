@@ -114,11 +114,13 @@ public class MovementController : MonoBehaviour {
                 body.transform.Rotate(new Vector3(90f, 0f, 0f));
                 body.transform.position = new Vector3(body.transform.position.x, 0.25f, body.transform.position.z);
                 currState = movementState.crawl;
+                CameraController.S.SwitchCameraTo(CameraType.crawl);
             } else if(currState == movementState.crawl)
             {
                 body.transform.Rotate(new Vector3(-90f, 0f, 0f));
                 body.transform.position = new Vector3(body.transform.position.x, 1f, body.transform.position.z);
                 currState = movementState.run;
+                CameraController.S.SwitchCameraTo(CameraType.overhead);
             }
         }
     }
