@@ -39,9 +39,13 @@ public class MovementController : MonoBehaviour {
 			vel.x += 1;
 		}
 
+		Debug.DrawRay (transform.position, vel.normalized);
+
 		// Save the last known button press direction
 		if (vel != Vector3.zero) 
 			lastVel = vel;
+
+
 
         //perform wall stick sneak movements
         if(currState == movementState.sneak)
@@ -67,8 +71,14 @@ public class MovementController : MonoBehaviour {
 			
 		// Move Character
 		Debug.DrawRay(transform.position, transform.forward);
+<<<<<<< Updated upstream
 
         body.velocity = vel.normalized * speed;
+=======
+		if (Vector3.Angle (body.transform.forward, lastVel.normalized) < 15f) {
+			body.velocity = vel.normalized * speed;
+		}
+>>>>>>> Stashed changes
 
         //set our foward direction if in run state (run rotation)
         if (currState == movementState.run)
@@ -82,24 +92,25 @@ public class MovementController : MonoBehaviour {
             body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
 		}
 
+		//set look direction in crawl mode, unless snake is backing up
+		if(currState == movementState.crawl)
+		{
+			body.transform.Rotate(new Vector3(90f, 0f, 0f));
+
+			float velAngleFromCurrent = Vector3.Angle(body.transform.forward, vel);
+			if (Mathf.Approximately(velAngleFromCurrent, 180f) || Mathf.Approximately(velAngleFromCurrent, 0f))
+			{
+				body.transform.Rotate(new Vector3(-90f, 0f, 0f));
+			} else
+			{
+				body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+				//body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
+				body.transform.Rotate(new Vector3(90f, 0f, 0f));
+			}
+		}
+
         if(vel != Vector3.zero)
         {
-            //set look direction in crawl mode, unless snake is backing up
-            if(currState == movementState.crawl)
-            {
-                body.transform.Rotate(new Vector3(90f, 0f, 0f));
-
-                float velAngleFromCurrent = Vector3.Angle(body.transform.forward, vel);
-                if (Mathf.Approximately(velAngleFromCurrent, 180f) || Mathf.Approximately(velAngleFromCurrent, 0f))
-                {
-                    body.transform.Rotate(new Vector3(-90f, 0f, 0f));
-                } else
-                {
-                    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
-                    body.transform.Rotate(new Vector3(90f, 0f, 0f));
-                }
-            }
-
             //check for wall collision to stick to
             if(Physics.Raycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 0.2f) && collided > 0)
             {
