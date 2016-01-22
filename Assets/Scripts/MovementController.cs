@@ -38,6 +38,8 @@ public class MovementController : MonoBehaviour {
 		if (Input.GetKey (KeyCode.D)) {
 			vel.x += 1;
 		}
+
+		// Save the last known button press direction
 		if (vel != Vector3.zero) 
 			lastVel = vel;
 
@@ -64,14 +66,16 @@ public class MovementController : MonoBehaviour {
         }
 			
 		// Move Character
+		Debug.DrawRay(transform.position, transform.forward);
 
-		body.velocity = vel.normalized * speed;
+		if (Vector3.Angle(body.transform.forward, lastVel.normalized) < 15f)
+			body.velocity = vel.normalized * speed;
 
 		//set our foward direction if in run state (run rotation)
 		if (currState == movementState.run)
 		{ 
 			// Lerp for smooth rotation
-			body.transform.rotation = Quaternion.LookRotation(Vector3.Lerp(body.transform.forward, lastVel.normalized, rotationSpeed));
+			body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
 		}
 
         if(vel != Vector3.zero)

@@ -14,27 +14,25 @@ public class CameraFollow : MonoBehaviour {
 		playerPos = player.transform.position;
 
 		// Position of camera after checks
-		//print(camPos.y - playerPos.y);
-
 		Vector3 newPos = camPos;
-		newPos.y = playerPos.y + 1.25f;
+		newPos.y = playerPos.y;
 
 		// Set up new position of camera
 		// If player is 1.5 meters left of the center
-		if (camPos.x - playerPos.x > 1.0f) {
-			newPos.x = playerPos.x + 1.0f;
+		if (camPos.x - playerPos.x > 0.5f) {
+			newPos.x = playerPos.x + 0.5f;
 		}
 		// If player is 1.5 meters right of the center
-		if (camPos.x - playerPos.x < -1.0f) {
-			newPos.x = playerPos.x - 1.0f;
+		if (camPos.x - playerPos.x < -0.5f) {
+			newPos.x = playerPos.x - 0.5f;
 		}
 		// If player is 1.5 meters below center
-		if (camPos.z - playerPos.z > 1.5f) {
-			newPos.z = playerPos.z + 1.5f;
+		if (camPos.z - playerPos.z > 0.5f) {
+			newPos.z = playerPos.z + 0.5f;
 		}
 		// If player is 1.5 meters above center
-		if (camPos.z - playerPos.z < -1.0f) {
-			newPos.z = playerPos.z - 1.0f;
+		if (camPos.z - playerPos.z < -0.5f) {
+			newPos.z = playerPos.z - 0.5f;
 		}
 
 		// Move camera
