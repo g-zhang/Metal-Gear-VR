@@ -68,14 +68,18 @@ public class MovementController : MonoBehaviour {
 		// Move Character
 		Debug.DrawRay(transform.position, transform.forward);
 
-		if (Vector3.Angle(body.transform.forward, lastVel.normalized) < 15f)
-			body.velocity = vel.normalized * speed;
+        body.velocity = vel.normalized * speed;
 
-		//set our foward direction if in run state (run rotation)
-		if (currState == movementState.run)
-		{ 
-			// Lerp for smooth rotation
-			body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
+        //set our foward direction if in run state (run rotation)
+        if (currState == movementState.run)
+        {
+            if (Vector3.Angle(body.transform.forward, lastVel.normalized) > 15f)
+            {
+                body.velocity = Vector3.zero;
+            }
+                
+            // Lerp for smooth rotation
+            body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
 		}
 
         if(vel != Vector3.zero)
