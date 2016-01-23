@@ -2,7 +2,9 @@
 using System.Collections;
 
 public class MovementController : MonoBehaviour {
-	public float speed = 10f;
+	public float speed = 3.8f;
+	public float slowSpeed = 1f;
+
 	Rigidbody body;
 	public enum movementState { run = 0, crawl, sneak };
 	public movementState currState = movementState.run;
@@ -39,10 +41,6 @@ public class MovementController : MonoBehaviour {
 			vel.x += 1;
 		}
 
-		// Save the last known button press direction
-		if (vel != Vector3.zero) 
-			lastVel = vel;
-
 		//perform wall stick sneak movements
 		if(currState == movementState.sneak)
 		{
@@ -65,10 +63,19 @@ public class MovementController : MonoBehaviour {
 			}
 		}
 
+		// Save the last known button press direction
+		if (vel != Vector3.zero) 
+			lastVel = vel;
+
 		// Move Character
 		Debug.DrawRay(transform.position, transform.forward);
 
-		body.velocity = vel.normalized * speed;
+		// Speed of movement depends on movementState
+		if (currState == movementState.run) {
+			body.velocity = vel.normalized * speed;
+		} else {
+			body.velocity = vel.normalized * slowSpeed;
+		}
 
 		//set our foward direction if in run state (run rotation)
 		if (currState == movementState.run)
@@ -80,6 +87,7 @@ public class MovementController : MonoBehaviour {
 
 			// Lerp for smooth rotation
 			body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
+			//body.transform.rotation = Quaternion.LookRotation(lastVel.normalized);	
 		}
 
 		if(vel != Vector3.zero)
@@ -108,8 +116,10 @@ public class MovementController : MonoBehaviour {
 			else if(collided < 0 && currState == movementState.run)
 			{	
 				print ("HI");
+				// Flips character
 				gameObject.transform.forward *= -1;
 				currState = movementState.sneak;
+
 				if (gameObject.transform.forward.x != 0)
 				{
 					moveLock = movementLock.LR;
