@@ -18,16 +18,11 @@ public class WalkingPoint : MonoBehaviour {
 	
 	}
 
-	void OnTriggerStay(Collider other) 
+	void OnTriggerEnter(Collider coll) 
     {
-        if(other.gameObject.tag == "Enemy")
-        {
-			if (timeTilMove > 0) {
-				timeTilMove -= Time.deltaTime;
-			} else {
-				timeTilMove = pauseTime;
-				other.gameObject.GetComponent<EnemyBehavior> ().SetNext (nextPoint);
-			}
+        if(coll.gameObject.tag == "Enemy")
+		{
+			coll.gameObject.GetComponent<EnemyBehavior> ().SetNext (nextPoint);
         }
         
     }
