@@ -19,7 +19,13 @@ public class EnemyBehavior : MonoBehaviour {
         //Vector3 distance = nextPoint.transform.position - gameObject.transform.position;
         //body.velocity = distance.normalized * speed;
         //body.transform.forward = distance.normalized;
-        agn.destination = nextPoint.transform.position;
+
+//		Vector3 targetDir = nextPoint.transform.position - transform.position;
+//		if (Vector3.Angle (body.transform.forward, targetDir) > 45f) {
+//			body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, targetDir, 0.4f));
+//		} else {
+			agn.destination = nextPoint.transform.position;
+//		}
 
         //vision
         Vector3 toPlayer = MovementController.player.transform.position - gameObject.transform.position;

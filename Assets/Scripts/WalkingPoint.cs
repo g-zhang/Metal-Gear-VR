@@ -3,9 +3,13 @@ using System.Collections;
 
 public class WalkingPoint : MonoBehaviour {
     public GameObject nextPoint;
+	public float pauseTime = 3f;
+
+	float timeTilMove;
 
 	// Use this for initialization
 	void Start () {
+		timeTilMove = pauseTime;
 	
 	}
 	
@@ -14,11 +18,16 @@ public class WalkingPoint : MonoBehaviour {
 	
 	}
 
-    void OnTriggerEnter(Collider coll)
+	void OnTriggerStay(Collider other) 
     {
-        if(coll.gameObject.tag == "Enemy")
+        if(other.gameObject.tag == "Enemy")
         {
-            coll.gameObject.GetComponent<EnemyBehavior>().SetNext(nextPoint);
+			if (timeTilMove > 0) {
+				timeTilMove -= Time.deltaTime;
+			} else {
+				timeTilMove = pauseTime;
+				other.gameObject.GetComponent<EnemyBehavior> ().SetNext (nextPoint);
+			}
         }
         
     }
