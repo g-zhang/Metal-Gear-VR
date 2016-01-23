@@ -4,8 +4,9 @@ using System.Collections;
 public class MovementController : MonoBehaviour {
 	public float speed = 3.8f;
 	public float slowSpeed = 1f;
+    public float rotationSpeed = 0.4f;
 
-	Rigidbody body;
+    Rigidbody body;
 	public enum movementState { run = 0, crawl, sneak };
 	public movementState currState = movementState.run;
 	public static MovementController player;
@@ -14,10 +15,23 @@ public class MovementController : MonoBehaviour {
 	public float collideToStick = .1f;
 	public enum movementLock { LR = 0, FB }
 	public movementLock moveLock;
+    public float raycastOffsetTop = .5f;
+    public float raycastOffsetBottom = .3f;
 
-	public float rotationSpeed = 0.4f;
+    Vector3 lastVel;
 
-	Vector3 lastVel;
+    //performs a double raycast above and below the start point by offset amount
+    //returns true if either raycast returns true
+    public bool doubleRaycast(Vector3 start, Vector3 end, float distance)
+    {
+        Vector3 start1 = start - new Vector3(0, raycastOffsetBottom, 0);
+        //Debug.DrawRay(start1, end);
+
+        Vector3 start2 = start + new Vector3(0, raycastOffsetTop, 0);
+        //Debug.DrawRay(start2, end);
+
+        return Physics.Raycast(start1, end, distance) || Physics.Raycast(start2, end, distance);
+    }
 
 	// Use this for initialization
 	void Start () {
@@ -48,7 +62,7 @@ public class MovementController : MonoBehaviour {
 				currState = movementState.run;
 				collided = collideToStick;
 			}
-			else if(!Physics.Raycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f))
+			else if(!doubleRaycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f))
 			{
 				currState = movementState.run;
 				collided = collideToStick;
@@ -67,9 +81,7 @@ public class MovementController : MonoBehaviour {
 		if (vel != Vector3.zero) 
 			lastVel = vel;
 
-		// Move Character
-		Debug.DrawRay(transform.position, transform.forward);
-
+        //MOVEMENT of the Character
 		// Speed of movement depends on movementState
 		if (currState == movementState.run) {
 			body.velocity = vel.normalized * speed;
@@ -77,47 +89,53 @@ public class MovementController : MonoBehaviour {
 			body.velocity = vel.normalized * slowSpeed;
 		}
 
-		//set our foward direction if in run state (run rotation)
-		if (currState == movementState.run)
-		{
-			if (Vector3.Angle(body.transform.forward, lastVel.normalized) > 45f)
-			{
-				body.velocity = Vector3.zero;
-			}
 
-			// Lerp for smooth rotation
-			body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
-			//body.transform.rotation = Quaternion.LookRotation(lastVel.normalized);	
-		}
+        //ROTATIONS, face character towards the vector of movement:
+        //set our foward direction if in run state (run rotation)
+        if (currState == movementState.run)
+        {
+            if (Vector3.Angle(body.transform.forward, lastVel.normalized) > 45f)
+            {
+                body.velocity = Vector3.zero;
+            }
 
-		if(vel != Vector3.zero)
-		{
-			//set look direction in crawl mode, unless snake is backing up
-			if(currState == movementState.crawl)
-			{
-				body.transform.Rotate(new Vector3(90f, 0f, 0f));
+            // Lerp for smooth rotation
+            body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
+            //body.transform.rotation = Quaternion.LookRotation(lastVel.normalized);	
+        }
+        else //set look direction in crawl mode, unless snake is backing up
+        if (currState == movementState.crawl)
+        {
+            if (vel != Vector3.zero)
+            {
+                body.transform.Rotate(new Vector3(90f, 0f, 0f));
 
-				float velAngleFromCurrent = Vector3.Angle(body.transform.forward, vel);
-				if (Mathf.Abs(velAngleFromCurrent - 0f) <= 50f)
+                float velAngleFromCurrent = Vector3.Angle(body.transform.forward, vel);
+
+                //dont turn snake around if its within 45 degrees
+                if (Mathf.Abs(velAngleFromCurrent - 0f) <= 50f)
                 {
                     //body.transform.Rotate(new Vector3(-90f, 0f, 0f));
                     body.transform.rotation = Quaternion.LookRotation(vel.normalized);
                     body.transform.Rotate(new Vector3(90f, 180f, 0f));
-                } else
-				{
-					body.transform.rotation = Quaternion.LookRotation(vel.normalized);
-					body.transform.Rotate(new Vector3(90f, 0f, 0f));
-				}
-			}
+                }
+                else
+                {
+                    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+                    body.transform.Rotate(new Vector3(90f, 0f, 0f));
+                }
+            }
+        }
 
+		if(vel != Vector3.zero)
+		{
 			//check for wall collision to stick to
-			if(Physics.Raycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 0.2f) && collided > 0)
+			if(doubleRaycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 0.2f) && collided > 0)
 			{
 				collided -= Time.deltaTime;
 			}
 			else if(collided < 0 && currState == movementState.run)
 			{	
-				print ("HI");
                 // Flips character
                 body.transform.rotation = Quaternion.LookRotation(vel.normalized);
                 gameObject.transform.forward *= -1;
@@ -144,8 +162,6 @@ public class MovementController : MonoBehaviour {
 				//
 				body.transform.position = new Vector3(body.transform.position.x, 0.25f, body.transform.position.z);
 				currState = movementState.crawl;
-				//CameraController.S.SwitchCameraTo(CameraType.crawl);
-				// Should only be FPV-Crawl when you cannot stand up aka crawling in a 1 meter tall tunnel
 			} else if(currState == movementState.crawl)
 			{
 				body.transform.Rotate(new Vector3(-90f, 0f, 0f));
@@ -154,5 +170,20 @@ public class MovementController : MonoBehaviour {
 				CameraController.S.SwitchCameraTo(CameraType.overhead);
 			}
 		}
+
+        //CAMERA movement logic
+
+        //check if snake crawls under obstacles
+        if(currState == movementState.crawl)
+        {
+            if (Physics.Raycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 1.0f))
+            {
+                // Should only be FPV-Crawl when you cannot stand up aka crawling in a 1 meter tall tunnel
+                CameraController.S.SwitchCameraTo(CameraType.crawl);
+            } else
+            {
+                CameraController.S.SwitchCameraTo(CameraType.overhead);
+            }
+        }
 	}
 }
