@@ -100,8 +100,10 @@ public class MovementController : MonoBehaviour {
 				float velAngleFromCurrent = Vector3.Angle(body.transform.forward, vel);
 				if (Mathf.Abs(velAngleFromCurrent - 0f) <= 50f)
                 {
-					body.transform.Rotate(new Vector3(-90f, 0f, 0f));
-				} else
+                    //body.transform.Rotate(new Vector3(-90f, 0f, 0f));
+                    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+                    body.transform.Rotate(new Vector3(90f, 180f, 0f));
+                } else
 				{
 					body.transform.rotation = Quaternion.LookRotation(vel.normalized);
 					body.transform.Rotate(new Vector3(90f, 0f, 0f));
