@@ -73,7 +73,7 @@ public class MovementController : MonoBehaviour {
 		//set our foward direction if in run state (run rotation)
 		if (currState == movementState.run)
 		{
-			if (Vector3.Angle(body.transform.forward, lastVel.normalized) > 15f)
+			if (Vector3.Angle(body.transform.forward, lastVel.normalized) > 45f)
 			{
 				body.velocity = Vector3.zero;
 			}
