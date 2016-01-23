@@ -98,8 +98,8 @@ public class MovementController : MonoBehaviour {
 				body.transform.Rotate(new Vector3(90f, 0f, 0f));
 
 				float velAngleFromCurrent = Vector3.Angle(body.transform.forward, vel);
-				if (Mathf.Approximately(velAngleFromCurrent, 180f) || Mathf.Approximately(velAngleFromCurrent, 0f))
-				{
+				if (Mathf.Abs(velAngleFromCurrent - 0f) <= 50f)
+                {
 					body.transform.Rotate(new Vector3(-90f, 0f, 0f));
 				} else
 				{
@@ -116,8 +116,9 @@ public class MovementController : MonoBehaviour {
 			else if(collided < 0 && currState == movementState.run)
 			{	
 				print ("HI");
-				// Flips character
-				gameObject.transform.forward *= -1;
+                // Flips character
+                body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+                gameObject.transform.forward *= -1;
 				currState = movementState.sneak;
 
 				if (gameObject.transform.forward.x != 0)
