@@ -5,7 +5,6 @@ public class EnemyBehavior : MonoBehaviour {
 
     public GameObject nextPoint;
     Rigidbody body;
-    public float speed = 10f;
 	public float rotationSpeed = 0.1f;
     NavMeshAgent agn;
 
@@ -47,11 +46,19 @@ public class EnemyBehavior : MonoBehaviour {
 			}
 		}
 			
-        //vision
+        // Enemy vision
+
+		// If player is within the 90 degree vision cone and is 4 away...
         Vector3 toPlayer = MovementController.player.transform.position - gameObject.transform.position;
         if(Vector3.Angle(toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4)
-        {
-            Application.LoadLevel("Main");
+		{
+			// If player is not hidden behind something...
+			RaycastHit hit;
+			Vector3 fwd = transform.TransformDirection (Vector3.forward);
+			if (Physics.Raycast (transform.position, fwd, out hit) && hit.collider.name == "Snake") {
+				//Application.LoadLevel("Main");
+				print("I SEE YOU!");
+			}
         }
 	}
 
