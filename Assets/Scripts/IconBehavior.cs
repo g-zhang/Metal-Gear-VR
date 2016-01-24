@@ -17,7 +17,7 @@ public class IconBehavior : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		gameObject.transform.position = player.transform.position;
+		gameObject.transform.position = new Vector3(player.transform.position.x, player.transform.position.y + 2, player.transform.position.z);
 
 //		// If it's time to flicker
 //		if (timeTilFlicker <= 0) {

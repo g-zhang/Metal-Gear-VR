@@ -3,14 +3,11 @@ using System.Collections;
 
 public class WalkingPoint : MonoBehaviour {
     public GameObject nextPoint;
-	public float pauseTime = 3f;
-
-	float timeTilMove;
+	// What direction the enemy will face at that point
+	public Vector3 direction; 
 
 	// Use this for initialization
 	void Start () {
-		timeTilMove = pauseTime;
-	
 	}
 	
 	// Update is called once per frame
@@ -23,6 +20,7 @@ public class WalkingPoint : MonoBehaviour {
         if(coll.gameObject.tag == "Enemy")
 		{
 			coll.gameObject.GetComponent<EnemyBehavior> ().SetNext (nextPoint);
+			coll.gameObject.GetComponent<EnemyBehavior> ().SetDirection (direction);
         }
         
     }
