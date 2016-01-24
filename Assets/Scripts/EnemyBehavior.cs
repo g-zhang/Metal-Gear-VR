@@ -12,7 +12,12 @@ public class EnemyBehavior : MonoBehaviour {
 	public float timeTilMove;
 	GameObject currentPoint;
 
+	public AudioSource alertSound;
+
 	Vector3 pointDirection;
+
+	bool alerted = false;
+	bool alertSoundPlayed = false;
 
 	// Use this for initialization
 	void Start () {
@@ -50,16 +55,27 @@ public class EnemyBehavior : MonoBehaviour {
 
 		// If player is within the 90 degree vision cone and is 4 away...
         Vector3 toPlayer = MovementController.player.transform.position - gameObject.transform.position;
-        if(Vector3.Angle(toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4)
-		{
+		if (Vector3.Angle (toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4) {
 			// If player is not hidden behind something...
 			RaycastHit hit;
-			Vector3 fwd = transform.TransformDirection (Vector3.forward);
-			if (Physics.Raycast (transform.position, fwd, out hit) && hit.collider.name == "Snake") {
-				//Application.LoadLevel("Main");
-				print("I SEE YOU!");
+			//Vector3 fwd = transform.TransformDirection (Vector3.forward);
+			Debug.DrawRay (transform.position, toPlayer);
+			if (Physics.Raycast (transform.position, toPlayer, out hit)) {
+				print (hit.collider.name);
+				if (hit.collider.name == "Snake") {
+					//Application.LoadLevel("Main");
+					if (!alertSoundPlayed) {
+						alertSound.Play ();
+						alertSoundPlayed = true;
+					}
+					print ("I SEE YOU!");
+					agn.Stop ();
+				}
 			}
-        }
+		} else {
+			agn.Resume ();
+			alertSoundPlayed = false;
+		}
 	}
 
     public void SetNext(GameObject next)
