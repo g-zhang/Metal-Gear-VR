@@ -5,7 +5,9 @@ public class MovementController : MonoBehaviour {
 	public float speed = 3.8f;
 	public float slowSpeed = 1f;
     public float rotationSpeed = 0.4f;
-    public float FPVRotationSpeedDeg = 5f;
+
+    public float FPVRotationSpeedDeg = .8f;
+    public float FPVRotationDecel = .6f;
 
 
     Rigidbody body;
@@ -24,6 +26,7 @@ public class MovementController : MonoBehaviour {
 
     Vector3 lastVel;
     Vector3 lastCrawlForwardVector;
+    float timeTillDecel = 1f / 60f;
 
     //performs a double raycast above and below the start point by offset amount
     //returns true if either raycast returns true
@@ -117,15 +120,29 @@ public class MovementController : MonoBehaviour {
             {
                 body.velocity = -crawlForwardVector * slowSpeed;
             }
+            if(Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D))
+            {
+                if (Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D))
+                {
+                    lastCrawlForwardVector = (new Vector3(0f, 0f, FPVRotationSpeedDeg));
+                }
+                if (Input.GetKey(KeyCode.D) && !Input.GetKey(KeyCode.A))
+                {
+                    lastCrawlForwardVector = (new Vector3(0f, 0f, -FPVRotationSpeedDeg));
+                }
+            } else
+            {
+                if(timeTillDecel > 0)
+                {
+                    timeTillDecel -= Time.deltaTime;
+                } else
+                {
+                    timeTillDecel = 1f / 60f;;
+                    lastCrawlForwardVector *= FPVRotationDecel;
+                }
+            }
+            body.transform.Rotate(lastCrawlForwardVector);
 
-            if (Input.GetKey(KeyCode.A))
-            {
-                body.transform.Rotate(new Vector3(0f, 0f, 1f));
-            }
-            if (Input.GetKey(KeyCode.D))
-            {
-                body.transform.Rotate(new Vector3(0f, 0f, -1f));
-            }
         }
 
         //ROTATIONS, face character towards the vector of movement:
