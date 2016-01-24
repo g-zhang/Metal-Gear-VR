@@ -6,7 +6,7 @@ public class MovementController : MonoBehaviour {
 	public float slowSpeed = 1f;
     public float rotationSpeed = 0.4f;
 
-    public float FPVRotationSpeedDeg = .8f;
+    public float FPVRotationSpeedDeg = 2.5f;
     public float FPVRotationDecel = .6f;
 
 
@@ -24,9 +24,14 @@ public class MovementController : MonoBehaviour {
 
     public bool FPVModeCrawlControl = false;
 
+    public float inFPVModeCrawlTransition = 0f;
+    public float ToFPVModeTransitionTime = .5f;
+    public float FromFPVModeTransitionTime = 1.0f;
+
     Vector3 lastVel;
-    Vector3 lastCrawlForwardVector;
-    float timeTillDecel = 1f / 60f;
+    Vector3 lastCrawlTurnVector;
+    Vector3 lastForwardCrawlVector = Vector3.zero;
+    float timeTillTurnUpdate = 1f / 60f; //turn controls in FPV crawl mode updates in 60 hz
 
     //performs a double raycast above and below the start point by offset amount
     //returns true if either raycast returns true
@@ -99,12 +104,16 @@ public class MovementController : MonoBehaviour {
 		}
 
 		// Save the last known button press direction
-		if (vel != Vector3.zero) 
+		if (vel != Vector3.zero)
 			lastVel = vel;
 
         //MOVEMENT of the Character
-		// Speed of movement depends on movementState
-		if (currState == movementState.run) {
+		// Speed and direction of movement depends on movementState
+        if(inFPVModeCrawlTransition > 0 && currState == movementState.crawl)
+        {
+            inFPVModeCrawlTransition -= Time.deltaTime;
+            body.velocity = lastForwardCrawlVector;
+        } else if (currState == movementState.run) {
 			body.velocity = vel.normalized * speed;
 		} else if(!FPVModeCrawlControl) {
 			body.velocity = vel.normalized * slowSpeed;
@@ -120,28 +129,33 @@ public class MovementController : MonoBehaviour {
             {
                 body.velocity = -crawlForwardVector * slowSpeed;
             }
-            if(Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D))
+
+            if (Input.GetKey(KeyCode.A))
             {
-                if (Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D))
-                {
-                    lastCrawlForwardVector = (new Vector3(0f, 0f, FPVRotationSpeedDeg));
-                }
-                if (Input.GetKey(KeyCode.D) && !Input.GetKey(KeyCode.A))
-                {
-                    lastCrawlForwardVector = (new Vector3(0f, 0f, -FPVRotationSpeedDeg));
-                }
-            } else
+                lastCrawlTurnVector = (new Vector3(0f, 0f, FPVRotationSpeedDeg));
+            }
+            else if (Input.GetKey(KeyCode.D))
             {
-                if(timeTillDecel > 0)
+                lastCrawlTurnVector = (new Vector3(0f, 0f, -FPVRotationSpeedDeg));
+            }
+            else
+            {
+                if(timeTillTurnUpdate <= 0)
                 {
-                    timeTillDecel -= Time.deltaTime;
-                } else
-                {
-                    timeTillDecel = 1f / 60f;;
-                    lastCrawlForwardVector *= FPVRotationDecel;
+                    lastCrawlTurnVector *= FPVRotationDecel;
                 }
             }
-            body.transform.Rotate(lastCrawlForwardVector);
+
+            if (timeTillTurnUpdate > 0)
+            {
+                timeTillTurnUpdate -= Time.deltaTime;
+            }
+            else
+            {
+                timeTillTurnUpdate = 1f / 60f;
+                body.transform.Rotate(lastCrawlTurnVector);
+            }
+                
 
         }
 
@@ -158,8 +172,8 @@ public class MovementController : MonoBehaviour {
             body.transform.rotation = Quaternion.LookRotation(Vector3.Slerp(body.transform.forward, lastVel.normalized, rotationSpeed));
             //body.transform.rotation = Quaternion.LookRotation(lastVel.normalized);	
         }
-        else //set look direction in crawl mode, unless snake is backing up
-        if (currState == movementState.crawl && !FPVModeCrawlControl)
+        else //set look direction in crawl mode, unless snake is backing up, or in FPV Crawl mode
+        if (currState == movementState.crawl && !FPVModeCrawlControl && inFPVModeCrawlTransition <= 0)
         {
             if (vel != Vector3.zero)
             {
@@ -217,7 +231,7 @@ public class MovementController : MonoBehaviour {
 				//
 				body.transform.position = new Vector3(body.transform.position.x, 0.25f, body.transform.position.z);
 				currState = movementState.crawl;
-			} else if(currState == movementState.crawl && !FPVModeCrawlControl)
+			} else if(currState == movementState.crawl && !FPVModeCrawlControl && inFPVModeCrawlTransition <= 0)
 			{
 				body.transform.Rotate(new Vector3(-90f, 0f, 0f));
 				body.transform.position = new Vector3(body.transform.position.x, .75f, body.transform.position.z);
@@ -225,9 +239,7 @@ public class MovementController : MonoBehaviour {
 			}
 		}
 
-        //CAMERA movement logic
-
-        //check if snake crawls under obstacles
+        //Check FPVModeCrawl State, aka if snake crawls under enclosed space, switch mode and camera
         if(currState == movementState.crawl)
         {
             if (Physics.Raycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 1.0f))
@@ -237,12 +249,16 @@ public class MovementController : MonoBehaviour {
                     // Should only be FPV-Crawl when you cannot stand up aka crawling in a 1 meter tall tunnel
                     CameraController.S.SwitchCameraTo(CameraType.crawl);
                     FPVModeCrawlControl = true;
+                    inFPVModeCrawlTransition = ToFPVModeTransitionTime;
+                    lastForwardCrawlVector = body.velocity;
                 }
             } else {
                 if(FPVModeCrawlControl)
                 {
                     CameraController.S.SwitchCameraTo(CameraType.overhead);
                     FPVModeCrawlControl = false;
+                    inFPVModeCrawlTransition = FromFPVModeTransitionTime;
+                    lastForwardCrawlVector = body.velocity;
                 }
             }
         }
