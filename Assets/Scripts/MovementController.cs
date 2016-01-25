@@ -36,6 +36,8 @@ public class MovementController : MonoBehaviour {
     float timeTillTurnUpdate = 1f / 60f; //turn controls in FPV crawl mode updates in 60 hz
     Vector3 defaultPlayerSize;
 
+    int wallLayerMask = 1 << 10; //mask for wall raycasting
+
     //performs a double raycast above and below the start point by offset amount
     //returns true if either raycast returns true
     public bool doubleRaycast(Vector3 start, Vector3 end, float distance)
@@ -46,7 +48,7 @@ public class MovementController : MonoBehaviour {
         Vector3 start2 = start + new Vector3(0, raycastOffsetTop, 0);
         //Debug.DrawRay(start2, end);
 
-        return Physics.Raycast(start1, end, distance) || Physics.Raycast(start2, end, distance);
+        return Physics.Raycast(start1, end, distance, wallLayerMask) || Physics.Raycast(start2, end, distance, wallLayerMask);
     }
 
     public Vector3 findForwardCrawlVector()
@@ -69,7 +71,7 @@ public class MovementController : MonoBehaviour {
 	void Update () {
         //grab the forwards vector for when the body is facedown (crawl state)
         Vector3 crawlForwardVector = findForwardCrawlVector();
-        Debug.DrawRay(body.transform.position, crawlForwardVector * 5f, Color.green);
+        //Debug.DrawRay(body.transform.position, crawlForwardVector * 5f, Color.green);
 
         Vector3 vel = Vector3.zero;
 		if (Input.GetKey (KeyCode.W)) {
@@ -88,23 +90,40 @@ public class MovementController : MonoBehaviour {
 		//perform wall stick sneak movements
 		if(currState == movementState.sneak)
 		{
-			if(Vector3.Dot(vel, gameObject.transform.forward) > 0 && Vector3.Angle(vel, gameObject.transform.forward) < 90) {
-				currState = movementState.run;
+            if(Vector3.Dot(vel, gameObject.transform.forward) > 0 && Vector3.Angle(vel, gameObject.transform.forward) < 90) {
+                if(inCrouchMode)
+                {
+                    currState = movementState.crawl;
+                } else
+                {
+                    currState = movementState.run;
+                }
 				collided = collideToStick;
 			}
 			else if(!doubleRaycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f))
 			{
-				currState = movementState.run;
-				collided = collideToStick;
+                if (inCrouchMode)
+                {
+                    currState = movementState.crawl;
+                }
+                else
+                {
+                    currState = movementState.run;
+                }
+                collided = collideToStick;
 			}
-			else if (moveLock == movementLock.LR)
+            else if (inCrouchMode)
+            {
+                vel = Vector3.zero;
+            }
+            else if (moveLock == movementLock.LR)
 			{
 				vel.x = 0;
 			}
 			else if(moveLock == movementLock.FB)
 			{
 				vel.z = 0;
-			}
+			} 
 		}
 
 		// Save the last known button press direction
@@ -115,6 +134,7 @@ public class MovementController : MonoBehaviour {
         if(inCrouchMode && vel != Vector3.zero)
         {
             body.transform.localScale = defaultPlayerSize;
+            body.transform.position = new Vector3(body.transform.position.x, 0.2f, body.transform.position.z);
             inCrouchMode = false;
         }
 
@@ -207,31 +227,7 @@ public class MovementController : MonoBehaviour {
             }
         }
 
-		if(vel != Vector3.zero)
-		{
-			//check for wall collision to stick to
-			if(doubleRaycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 0.2f) && collided > 0)
-			{
-				collided -= Time.deltaTime;
-			}
-			else if(collided < 0 && currState == movementState.run)
-			{	
-                // Flips character
-                body.transform.rotation = Quaternion.LookRotation(vel.normalized);
-                gameObject.transform.forward *= -1;
-				currState = movementState.sneak;
-
-				if (gameObject.transform.forward.x != 0)
-				{
-					moveLock = movementLock.LR;
-				}
-				else if (gameObject.transform.forward.z != 0)
-				{
-					moveLock = movementLock.FB;
-				}
-			}
-		}
-
+        //Crouch toggle behavior
 		if(Input.GetKeyDown(KeyCode.Q))
 		{
             if(inCrouchMode)
@@ -240,32 +236,67 @@ public class MovementController : MonoBehaviour {
                 body.transform.localScale = defaultPlayerSize;
                 currState = movementState.run;
             }
-			else if (currState == movementState.run)
+			else if (currState == movementState.run || currState == movementState.sneak)
 			{
 				//body.transform.Rotate(new Vector3(90f, 0f, 0f));
 
 				//				body.transform.Rotate( Vector3.Lerp (Vector3.zero, new Vector3 (90f, 0f, 0f), 0.5f));
 				//
-				body.transform.position = new Vector3(body.transform.position.x, 0.0f, body.transform.position.z);
+				body.transform.position = new Vector3(body.transform.position.x, .25f, body.transform.position.z);
 
                 Vector3 crouchSize = body.transform.localScale;
                 crouchSize.y = crouchHeight;
                 body.transform.localScale = crouchSize;
                 inCrouchMode = true;
 
-				currState = movementState.crawl;
+                //special case when sneaking against wall
+                if(currState == movementState.sneak)
+                {
+                    currState = movementState.sneak;
+                } else
+                {
+                    currState = movementState.crawl;
+                }
+
 			} else if(currState == movementState.crawl && !FPVModeCrawlControl && inFPVModeCrawlTransition <= 0)
 			{
 				body.transform.Rotate(new Vector3(-90f, 0f, 0f));
-				body.transform.position = new Vector3(body.transform.position.x, .75f, body.transform.position.z);
+				body.transform.position = new Vector3(body.transform.position.x, .5f, body.transform.position.z);
 				currState = movementState.run;
 			}
 		}
 
-        //Check FPVModeCrawl State, aka if snake crawls under enclosed space, switch mode and camera
-        if(currState == movementState.crawl && !inCrouchMode)
+        //RAYCAST behaviors:
+        //SNEAK Wall Detection
+        if (vel != Vector3.zero)
         {
-            if (Physics.Raycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 1.0f))
+            //check for wall collision to stick to
+            if (doubleRaycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 0.2f) && collided > 0)
+            {
+                collided -= Time.deltaTime;
+            }
+            else if (collided < 0 && currState == movementState.run)
+            {
+                // Flips character
+                body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+                gameObject.transform.forward *= -1;
+                currState = movementState.sneak;
+
+                if (gameObject.transform.forward.x != 0)
+                {
+                    moveLock = movementLock.LR;
+                }
+                else if (gameObject.transform.forward.z != 0)
+                {
+                    moveLock = movementLock.FB;
+                }
+            }
+        }
+        //CRAWL modes DETECTION
+        if (currState == movementState.crawl && !inCrouchMode)
+        {
+            //Check FPVModeCrawl State, aka if snake crawls under enclosed space, switch mode and camera
+            if (Physics.Raycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 1.0f, wallLayerMask))
             {
                 if (!FPVModeCrawlControl)
                 {
@@ -284,6 +315,58 @@ public class MovementController : MonoBehaviour {
                     lastForwardCrawlVector = body.velocity;
                 }
             }
+
+            //Debug.DrawRay(gameObject.transform.position, crawlForwardVector * ((gameObject.transform.lossyScale.y / 2) + 0.45f), Color.green);
+            //if (Physics.Raycast(gameObject.transform.position, crawlForwardVector, (gameObject.transform.lossyScale.y / 2) + 0.45f, wallLayerMask))
+            //{
+            //    // Flips character
+            //    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+            //    gameObject.transform.forward *= -1;
+            //    currState = movementState.sneak;
+
+            //    Vector3 newPos = new Vector3(body.transform.position.x, .25f, body.transform.position.z);
+            //    newPos += crawlForwardVector.normalized * ((gameObject.transform.lossyScale.y / 2));
+            //    body.transform.position = newPos;
+
+            //    Vector3 crouchSize = body.transform.localScale;
+            //    crouchSize.y = crouchHeight;
+            //    body.transform.localScale = crouchSize;
+            //    inCrouchMode = true;
+
+            //    if (gameObject.transform.forward.x != 0)
+            //    {
+            //        moveLock = movementLock.LR;
+            //    }
+            //    else if (gameObject.transform.forward.z != 0)
+            //    {
+            //        moveLock = movementLock.FB;
+            //    }
+            //}
+            //if (Physics.Raycast(gameObject.transform.position, -crawlForwardVector, (gameObject.transform.lossyScale.y / 2) + 0.01f, wallLayerMask))
+            //{
+            //    // Flips character
+            //    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+            //    currState = movementState.sneak;
+
+            //    Vector3 newPos = new Vector3(body.transform.position.x, .25f, body.transform.position.z);
+            //    //newPos += -crawlForwardVector.normalized * ((gameObject.transform.lossyScale.y / 2));
+            //    body.transform.position = newPos;
+
+            //    Vector3 crouchSize = body.transform.localScale;
+            //    crouchSize.y = crouchHeight;
+            //    body.transform.localScale = crouchSize;
+            //    inCrouchMode = true;
+
+            //    if (gameObject.transform.forward.x != 0)
+            //    {
+            //        moveLock = movementLock.LR;
+            //    }
+            //    else if (gameObject.transform.forward.z != 0)
+            //    {
+            //        moveLock = movementLock.FB;
+            //    }
+            //}
+
         }
 	}
 }
