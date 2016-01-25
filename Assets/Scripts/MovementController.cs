@@ -9,11 +9,13 @@ public class MovementController : MonoBehaviour {
     public float FPVRotationSpeedDeg = 2.5f;
     public float FPVRotationDecel = .6f;
 
+    public float crouchHeight = .75f;
 
     Rigidbody body;
 	public enum movementState { run = 0, crawl, sneak };
 	public movementState currState = movementState.run;
-	public static MovementController player;
+    public bool inCrouchMode = false; //snake in be in crouch in either sneak or crawl mode
+    public static MovementController player;
 
 	public float collided = .1f;
 	public float collideToStick = .1f;
@@ -32,6 +34,7 @@ public class MovementController : MonoBehaviour {
     Vector3 lastCrawlTurnVector;
     Vector3 lastForwardCrawlVector = Vector3.zero;
     float timeTillTurnUpdate = 1f / 60f; //turn controls in FPV crawl mode updates in 60 hz
+    Vector3 defaultPlayerSize;
 
     //performs a double raycast above and below the start point by offset amount
     //returns true if either raycast returns true
@@ -58,6 +61,7 @@ public class MovementController : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		body = gameObject.GetComponent<Rigidbody>();
+        defaultPlayerSize = body.transform.localScale;
 		player = this;
 	}
 
@@ -106,6 +110,13 @@ public class MovementController : MonoBehaviour {
 		// Save the last known button press direction
 		if (vel != Vector3.zero)
 			lastVel = vel;
+
+        //CROUCH logic: transform snake back to normal if he moves
+        if(inCrouchMode && vel != Vector3.zero)
+        {
+            body.transform.localScale = defaultPlayerSize;
+            inCrouchMode = false;
+        }
 
         //MOVEMENT of the Character
 		// Speed and direction of movement depends on movementState
@@ -223,13 +234,25 @@ public class MovementController : MonoBehaviour {
 
 		if(Input.GetKeyDown(KeyCode.Q))
 		{
-			if (currState == movementState.run)
+            if(inCrouchMode)
+            {
+                inCrouchMode = false;
+                body.transform.localScale = defaultPlayerSize;
+                currState = movementState.run;
+            }
+			else if (currState == movementState.run)
 			{
-				body.transform.Rotate(new Vector3(90f, 0f, 0f));
+				//body.transform.Rotate(new Vector3(90f, 0f, 0f));
 
 				//				body.transform.Rotate( Vector3.Lerp (Vector3.zero, new Vector3 (90f, 0f, 0f), 0.5f));
 				//
-				body.transform.position = new Vector3(body.transform.position.x, 0.25f, body.transform.position.z);
+				body.transform.position = new Vector3(body.transform.position.x, 0.0f, body.transform.position.z);
+
+                Vector3 crouchSize = body.transform.localScale;
+                crouchSize.y = crouchHeight;
+                body.transform.localScale = crouchSize;
+                inCrouchMode = true;
+
 				currState = movementState.crawl;
 			} else if(currState == movementState.crawl && !FPVModeCrawlControl && inFPVModeCrawlTransition <= 0)
 			{
@@ -240,7 +263,7 @@ public class MovementController : MonoBehaviour {
 		}
 
         //Check FPVModeCrawl State, aka if snake crawls under enclosed space, switch mode and camera
-        if(currState == movementState.crawl)
+        if(currState == movementState.crawl && !inCrouchMode)
         {
             if (Physics.Raycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 1.0f))
             {
