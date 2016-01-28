@@ -44,6 +44,7 @@ public class MovementController : MonoBehaviour {
     Vector3 defaultBoxColliderSize;
 
     int wallLayerMask = 1 << 10; //mask for wall raycasting
+    int floorLayerMask = 1 << 12;
 
     //performs a double raycast above and below the start point by offset amount
     //returns true if either raycast returns true
@@ -172,10 +173,10 @@ public class MovementController : MonoBehaviour {
 			Debug.DrawRay (leftPosition, new Vector3(0f,-4f, 0f));
 
 			// If either of the raycasts don't hit anything, then player is at an edge
-			// 	change camera position to sneak cam position
-			leftEdge = Physics.Raycast (leftPosition, new Vector3(0f,-1f,0f), out leftHit, 4f);
-			rightEdge = Physics.Raycast (rightPosition, new Vector3(0f,-1f,0f), out rightHit, 4f);
-
+			// 	change camera position to sneak cam pos\ition
+			leftEdge = Physics.Raycast (leftPosition, new Vector3(0f,-1f,0f), out leftHit, 4f, floorLayerMask);
+			rightEdge = Physics.Raycast (rightPosition, new Vector3(0f,-1f,0f), out rightHit, 4f, floorLayerMask);
+            
 			if (leftHit.collider.tag != "Floor")
 				leftEdge = false;
 			if (rightHit.collider.tag != "Floor")
@@ -408,35 +409,38 @@ public class MovementController : MonoBehaviour {
                 Ray headray = new Ray(gameObject.transform.position, crawlForwardVector);
                 RaycastHit hit;
                 //Debug.DrawRay(gameObject.transform.position, crawlForwardVector * ((gameObject.transform.lossyScale.y / 2) + 0.4f), Color.green);
-                //if (Physics.Raycast(headray, out hit, ((gameObject.transform.lossyScale.y / 2) + 0.4f), wallLayerMask))
-                //{
-                //    // Flips character
-                //    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
-                //    gameObject.transform.forward *= -1;
-                //    currState = movementState.sneak;
+                if (Physics.Raycast(headray, out hit, ((gameObject.transform.lossyScale.y / 2) + 0.4f), wallLayerMask) && collided > 0)
+                {
+                    collided -= Time.deltaTime;
+                }
+                else if (collided < 0)
+                {
+                    // Flips character
+                    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+                    gameObject.transform.forward = -crawlForwardVector;
+                    currState = movementState.sneak;
 
-                //    //Vector3 newPos = hit.point;
-                //    //print(hit.point);
-                //    //newPos += gameObject.transform.forward * ((gameObject.transform.lossyScale.y / 2) + .3f);
-                //    ////print(hit.point);
-                //    //gameObject.transform.position = newPos;
+                    Vector3 newPos = hit.point;
+                    newPos += -crawlForwardVector.normalized * ((gameObject.transform.lossyScale.y / 4));
+                    //print(hit.point);
+                    gameObject.transform.position = newPos;
 
-                //    Vector3 crouchSize = body.transform.localScale;
-                //    crouchSize.y = crouchHeight;
-                //    body.transform.localScale = crouchSize;
-                //    inCrouchMode = true;
+                    Vector3 crouchSize = body.transform.localScale;
+                    crouchSize.y = crouchHeight;
+                    body.transform.localScale = crouchSize;
+                    inCrouchMode = true;
 
-                //    if (gameObject.transform.forward.x != 0)
-                //    {
-                //        moveLock = movementLock.LR;
-                //    }
-                //    else if (gameObject.transform.forward.z != 0)
-                //    {
-                //        moveLock = movementLock.FB;
-                //    }
+                    if (gameObject.transform.forward.x != 0)
+                    {
+                        moveLock = movementLock.LR;
+                    }
+                    else if (gameObject.transform.forward.z != 0)
+                    {
+                        moveLock = movementLock.FB;
+                    }
 
-                //    body.velocity = Vector3.zero;
-                //}
+                    body.velocity = Vector3.zero;
+                }
                 //Debug.DrawRay(gameObject.transform.position, -crawlForwardVector * (gameObject.transform.lossyScale.y / 4), Color.green);
                 //if (Physics.Raycast(gameObject.transform.position, -crawlForwardVector, (gameObject.transform.lossyScale.y / 4), wallLayerMask))
                 //{
