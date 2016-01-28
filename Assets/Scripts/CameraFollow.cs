@@ -6,6 +6,10 @@ public class CameraFollow : MonoBehaviour {
 	public float cameraSpeed;
 	public GameObject mainCam;
 
+	// Time before camera moves to sneakCam
+	public float sneakCamDelay;
+	float timeTilSneakCam;
+
 	Vector3 gameObjPos;
 	Vector3 playerPos;
 	Vector3 newPos;
@@ -62,7 +66,12 @@ public class CameraFollow : MonoBehaviour {
 		} 
 		// Sneak cam position
 		else {
-			mainCam.transform.position = Vector3.Slerp (mainCam.transform.position, camPos, 0.2f);
+			// Delay until camera is actually moving into sneakCam
+			if (timeTilSneakCam < sneakCamDelay)
+				timeTilSneakCam += Time.deltaTime;
+			else {
+				mainCam.transform.position = Vector3.Slerp (mainCam.transform.position, camPos, 0.2f);
+			}
 		}
 	}
 
@@ -97,5 +106,6 @@ public class CameraFollow : MonoBehaviour {
 		//print ("Im securely hidden");
 		sneakCam = false;
 		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
+		timeTilSneakCam = 0;
 	}
 }

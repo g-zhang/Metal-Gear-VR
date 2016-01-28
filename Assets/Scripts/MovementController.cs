@@ -172,15 +172,23 @@ public class MovementController : MonoBehaviour {
 			Debug.DrawRay (rightPosition, new Vector3(0f,-4f,0f));
 			Debug.DrawRay (leftPosition, new Vector3(0f,-4f, 0f));
 
+			// 	change camera position to sneak cam position
 			// If either of the raycasts don't hit anything, then player is at an edge
-			// 	change camera position to sneak cam pos\ition
-			leftEdge = Physics.Raycast (leftPosition, new Vector3(0f,-1f,0f), out leftHit, 4f, floorLayerMask);
-			rightEdge = Physics.Raycast (rightPosition, new Vector3(0f,-1f,0f), out rightHit, 4f, floorLayerMask);
-            
-			if (leftHit.collider.tag != "Floor")
-				leftEdge = false;
-			if (rightHit.collider.tag != "Floor")
-				rightEdge = false;
+			leftEdge = Physics.Raycast (leftPosition, new Vector3(0f,-1f,0f), out leftHit, 4f);
+			rightEdge = Physics.Raycast (rightPosition, new Vector3(0f,-1f,0f), out rightHit, 4f);
+
+			if (leftEdge) {
+				if (leftHit.collider.tag != "Floor")
+					leftEdge = false;
+			}
+			if (rightEdge) {
+				if (rightHit.collider.tag != "Floor")
+					rightEdge = false;
+			}
+
+			// For cam direction purposes, move point forward
+			leftPosition += body.transform.forward;
+			rightPosition += body.transform.forward;
 
 			if (leftEdge && rightEdge) {
 				CameraController.S.GetComponent<CameraFollow> ().activateSneakCam (3, leftPosition+rightPosition);
