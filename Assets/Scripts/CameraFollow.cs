@@ -4,38 +4,98 @@ using System.Collections;
 public class CameraFollow : MonoBehaviour {
     public GameObject player;
 	public float cameraSpeed;
+	public GameObject mainCam;
 
-	Vector3 camPos;
+	Vector3 gameObjPos;
 	Vector3 playerPos;
+	Vector3 newPos;
+	Vector3 camPos;
+
+	bool sneakCam = false;
+	int currentEdge;
+
+	void Start() {
+		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
+		currentEdge = -1;
+	}
 
 	void Update () {
 		// camPos + playerPos are just shortcuts
-		camPos = gameObject.transform.position;
+		gameObjPos = gameObject.transform.position;
 		playerPos = player.transform.position;
 
-		// Position of camera after checks
-		Vector3 newPos = camPos;
-		newPos.y = playerPos.y;
+		// Default position
+		if (!sneakCam) {
 
-		// Set up new position of camera
-		// If player is 1.5 meters left of the center
-		if (camPos.x - playerPos.x > 0.5f) {
-			newPos.x = playerPos.x + 0.5f;
-		}
-		// If player is 1.5 meters right of the center
-		if (camPos.x - playerPos.x < -0.5f) {
-			newPos.x = playerPos.x - 0.5f;
-		}
-		// If player is 1.5 meters below center
-		if (camPos.z - playerPos.z > 0.5f) {
-			newPos.z = playerPos.z + 0.5f;
-		}
-		// If player is 1.5 meters above center
-		if (camPos.z - playerPos.z < -0.5f) {
-			newPos.z = playerPos.z - 0.5f;
-		}
+			// Make sure main cam is in default position
+			mainCam.transform.position = Vector3.Slerp(mainCam.transform.position, camPos, 0.2f);
 
-		// Move camera
-		gameObject.transform.position = newPos;
+//			Quaternion targetRotation = Quaternion.LookRotation (transform.position - mainCam.transform.position);
+//			float str = Mathf.Min (0.5f * Time.deltaTime, 1f);
+//			mainCam.transform.rotation = Quaternion.Lerp (transform.rotation, targetRotation, str);
+
+
+			// Position of cameraContainer after checks
+			newPos = gameObjPos;
+			newPos.y = playerPos.y;
+
+			// Set up new position of cameraContainer
+			// If player is 1.5 meters left of the center
+			if (gameObjPos.x - playerPos.x > 0.5f) {
+				newPos.x = playerPos.x + 0.5f;
+			}
+			// If player is 1.5 meters right of the center
+			if (gameObjPos.x - playerPos.x < -0.5f) {
+				newPos.x = playerPos.x - 0.5f;
+			}
+			// If player is 1.5 meters below center
+			if (gameObjPos.z - playerPos.z > 0.5f) {
+				newPos.z = playerPos.z + 0.5f;
+			}
+			// If player is 1.5 meters above center
+			if (gameObjPos.z - playerPos.z < -0.5f) {
+				newPos.z = playerPos.z - 0.5f;
+			}
+
+			// Move camera
+			gameObject.transform.position = newPos;
+		} 
+		// Sneak cam position
+		else {
+			mainCam.transform.position = Vector3.Slerp (mainCam.transform.position, camPos, 0.2f);
+		}
+	}
+
+	// 
+	public void activateSneakCam(int direction, Vector3 camMoveDirection) {
+		// Set it up once and be done this is really hacky
+		if (!sneakCam || currentEdge != direction) {
+			print ("Im at edge yo");
+			currentEdge = direction;
+			// At left edge
+			if (direction == 0) {
+				print ("left");
+				camPos = new Vector3 (playerPos.x - 3f, playerPos.y, playerPos.z - 3f);
+			}
+			// At right edge
+			if (direction == 1) {
+				print ("right");
+				camPos = new Vector3 (playerPos.x - 3f, playerPos.y, playerPos.z - 3f);
+			}
+			// At both (1 block wide wall)
+			if (direction == 3) {
+				print ("both");
+				camPos = new Vector3 (playerPos.x - 3f, playerPos.y, playerPos.z - 3f);
+			}
+			sneakCam = true;
+
+			camPos = camMoveDirection;
+		}
+	}
+
+	public void deactivateSneakCam() {
+		//print ("Im securely hidden");
+		sneakCam = false;
+		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
 	}
 }

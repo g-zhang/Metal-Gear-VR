@@ -58,17 +58,16 @@ public class EnemyBehavior : MonoBehaviour {
 		if (Vector3.Angle (toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4) {
 			// If player is not hidden behind something...
 			RaycastHit hit;
-			//Vector3 fwd = transform.TransformDirection (Vector3.forward);
 			Debug.DrawRay (transform.position, toPlayer);
 			if (Physics.Raycast (transform.position, toPlayer, out hit)) {
-				print (hit.collider.name);
+//				print (hit.collider.name);
 				if (hit.collider.name == "Snake") {
 					//Application.LoadLevel("Main");
 					if (!alertSoundPlayed) {
+						print ("I SEE YOU!");
 						alertSound.Play ();
 						alertSoundPlayed = true;
 					}
-					print ("I SEE YOU!");
 					agn.Stop ();
 				}
 			}

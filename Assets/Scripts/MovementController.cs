@@ -131,44 +131,74 @@ public class MovementController : MonoBehaviour {
 		}
 
 		//perform wall stick sneak movements
-		if(currState == movementState.sneak)
-		{
-            if(Vector3.Dot(vel, gameObject.transform.forward) > 0 && Vector3.Angle(vel, gameObject.transform.forward) < 90) {
-                if(inCrouchMode)
-                {
-                    currState = movementState.crawl;
-                    gameObject.transform.position += vel.normalized * sneakCrouchWallBuffer;
-                } else
-                {
-                    currState = movementState.run;
-                }
+		if (currState == movementState.sneak) {
+			if (Vector3.Dot (vel, gameObject.transform.forward) > 0 && Vector3.Angle (vel, gameObject.transform.forward) < 90) {
+				if (inCrouchMode) {
+					currState = movementState.crawl;
+					gameObject.transform.position += vel.normalized * sneakCrouchWallBuffer;
+				} else {
+					currState = movementState.run;
+				}
 				collided = collideToStick;
-			}
-			else if(!doubleRaycast(gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f))
-			{
-                if (inCrouchMode)
-                {
-                    currState = movementState.crawl;
-                    gameObject.transform.position += vel.normalized * sneakCrouchWallBuffer;
-                }
-                else
-                {
-                    currState = movementState.run;
-                }
-                collided = collideToStick;
-			}
-            else if (inCrouchMode)
-            {
-                vel = Vector3.zero;
-            }
-            else if (moveLock == movementLock.LR)
-			{
+			} else if (!doubleRaycast (gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f)) {
+				if (inCrouchMode) {
+					currState = movementState.crawl;
+					gameObject.transform.position += vel.normalized * sneakCrouchWallBuffer;
+				} else {
+					currState = movementState.run;
+				}
+				collided = collideToStick;
+			} else if (inCrouchMode) {
+				vel = Vector3.zero;
+			} else if (moveLock == movementLock.LR) {
 				vel.x = 0;
-			}
-			else if(moveLock == movementLock.FB)
-			{
+			} else if (moveLock == movementLock.FB) {
 				vel.z = 0;
 			} 
+
+			// SNEAK CAM CODE START
+
+			// If sneaking, then check to see if you're at an edge
+			Vector3 leftPosition, rightPosition;
+			bool leftEdge, rightEdge;
+			RaycastHit leftHit, rightHit;
+			rightPosition = body.transform.position + body.transform.right + (body.transform.forward * -1);
+			leftPosition = body.transform.position + (-1 * body.transform.right) + (body.transform.forward * -1);
+			rightPosition.y += 3f;
+			leftPosition.y += 3f;
+
+			// Debug rays
+			Debug.DrawRay (rightPosition, new Vector3(0f,-4f,0f));
+			Debug.DrawRay (leftPosition, new Vector3(0f,-4f, 0f));
+
+			// If either of the raycasts don't hit anything, then player is at an edge
+			// 	change camera position to sneak cam position
+			leftEdge = Physics.Raycast (leftPosition, new Vector3(0f,-1f,0f), out leftHit, 4f);
+			rightEdge = Physics.Raycast (rightPosition, new Vector3(0f,-1f,0f), out rightHit, 4f);
+
+			if (leftHit.collider.tag != "Floor")
+				leftEdge = false;
+			if (rightHit.collider.tag != "Floor")
+				rightEdge = false;
+
+			if (leftEdge && rightEdge) {
+				CameraController.S.GetComponent<CameraFollow> ().activateSneakCam (3, leftPosition+rightPosition);
+			} else if (leftEdge) {
+				CameraController.S.GetComponent<CameraFollow> ().activateSneakCam (0, leftPosition);
+			} else if (rightEdge) {
+				CameraController.S.GetComponent<CameraFollow> ().activateSneakCam (1, rightPosition);
+			}
+			// Otherwise, you're not at an edge
+			else {
+				// Change camera position back to normal
+				CameraController.S.GetComponent<CameraFollow> ().deactivateSneakCam ();
+			}
+
+			// SNEAK CAM CODE END
+		} 
+		// Also make sure that cam is deactivated to default once you leave sneak
+		else {
+			CameraController.S.GetComponent<CameraFollow> ().deactivateSneakCam ();
 		}
 
 		// Save the last known button press direction
