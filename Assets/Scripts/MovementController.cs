@@ -24,6 +24,7 @@ public class MovementController : MonoBehaviour {
     public static MovementController player;
 
 	public float collided = .1f;
+    public float collided2 = .2f;
 	public float collideToStick = .1f;
 	public enum movementLock { LR = 0, FB }
 	public movementLock moveLock;
@@ -104,10 +105,6 @@ public class MovementController : MonoBehaviour {
         {
             print("Circle Button: Punch!");
         }
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            print("Circle Button: Punch!");
-        }
         if (Input.GetKeyDown(KeyCode.Q))
         {
             print("Square Button: Grab!");
@@ -141,7 +138,8 @@ public class MovementController : MonoBehaviour {
 					currState = movementState.run;
 				}
 				collided = collideToStick;
-			} else if (!doubleRaycast (gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f)) {
+                collided2 = collideToStick * 2;
+            } else if (!doubleRaycast (gameObject.transform.position, -body.transform.forward, (gameObject.transform.lossyScale.z / 2) + .2f)) {
 				if (inCrouchMode) {
 					currState = movementState.crawl;
 					gameObject.transform.position += vel.normalized * sneakCrouchWallBuffer;
@@ -149,7 +147,8 @@ public class MovementController : MonoBehaviour {
 					currState = movementState.run;
 				}
 				collided = collideToStick;
-			} else if (inCrouchMode) {
+                collided2 = collideToStick * 2;
+            } else if (inCrouchMode) {
 				vel = Vector3.zero;
 			} else if (moveLock == movementLock.LR) {
 				vel.x = 0;
@@ -218,7 +217,24 @@ public class MovementController : MonoBehaviour {
         if(inCrouchMode && vel != Vector3.zero)
         {
             body.transform.localScale = defaultPlayerSize;
-            body.transform.position = new Vector3(body.transform.position.x, 0.2f, body.transform.position.z);
+            //check for nearby walls so we don't clip inside them
+            Ray frontray = new Ray(body.transform.position, body.transform.forward);
+            Ray buttray = new Ray(body.transform.position, -body.transform.forward);
+            if (Physics.Raycast(frontray, body.transform.lossyScale.y / 2f, wallLayerMask))
+            {
+                Vector3 safePos = gameObject.transform.position;
+                safePos += -body.transform.forward.normalized * ((body.transform.lossyScale.y / 2f) + .1f);
+                safePos.y = .2f;
+                body.transform.position = safePos;
+            }
+            else
+            {
+                body.transform.position = new Vector3(body.transform.position.x, 0.2f, body.transform.position.z);
+            }
+
+            body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+            body.transform.Rotate(new Vector3(90f, 0f, 0f));
+
             inCrouchMode = false;
         }
 
@@ -366,11 +382,11 @@ public class MovementController : MonoBehaviour {
         if (vel != Vector3.zero)
         {
             //check for wall collision to stick to
-            if (doubleRaycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 0.2f) && collided > 0)
+            if (doubleRaycast(gameObject.transform.position, body.transform.forward, (gameObject.transform.lossyScale.z / 2) + 0.2f) && collided2 > 0)
             {
-                collided -= Time.deltaTime;
+                collided2 -= Time.deltaTime;
             }
-            else if (collided < 0 && currState == movementState.run)
+            else if (collided2 < 0 && currState == movementState.run)
             {
                 // Flips character
                 body.transform.rotation = Quaternion.LookRotation(vel.normalized);
@@ -429,8 +445,15 @@ public class MovementController : MonoBehaviour {
                     currState = movementState.sneak;
 
                     Vector3 newPos = hit.point;
-                    newPos += -crawlForwardVector.normalized * ((gameObject.transform.lossyScale.y / 4));
-                    //print(hit.point);
+                    if(hit.point != Vector3.zero)
+                    {
+                        newPos += -crawlForwardVector.normalized * ((gameObject.transform.lossyScale.y / 4));
+                    } else
+                    {
+                        newPos = gameObject.transform.position;
+                    }
+                    print(hit.point);
+                    
                     gameObject.transform.position = newPos;
 
                     Vector3 crouchSize = body.transform.localScale;
@@ -449,32 +472,45 @@ public class MovementController : MonoBehaviour {
 
                     body.velocity = Vector3.zero;
                 }
-                //Debug.DrawRay(gameObject.transform.position, -crawlForwardVector * (gameObject.transform.lossyScale.y / 4), Color.green);
-                //if (Physics.Raycast(gameObject.transform.position, -crawlForwardVector, (gameObject.transform.lossyScale.y / 4), wallLayerMask))
-                //{
-                //    // Flips character
-                //    body.transform.rotation = Quaternion.LookRotation(crawlForwardVector);
-                //    gameObject.transform.forward *= -1;
-                //    currState = movementState.sneak;
 
-                //    Vector3 newPos = new Vector3(body.transform.position.x, 3.25f, body.transform.position.z);
-                //    //newPos += -crawlForwardVector.normalized * ((gameObject.transform.lossyScale.y / 2));
-                //    body.transform.position = newPos;
+                Ray buttray = new Ray(gameObject.transform.position, -crawlForwardVector);
+                RaycastHit hit2;
+                Debug.DrawRay(gameObject.transform.position, -crawlForwardVector * (gameObject.transform.lossyScale.y / 4), Color.green);
+                if (Physics.Raycast(buttray, out hit2, (gameObject.transform.lossyScale.y / 4), wallLayerMask) && collided2 > 0)
+                {
+                    collided2 -= Time.deltaTime;
+                }
+                else if (collided2 < 0)
+                {
+                    // Flips character
+                    body.transform.rotation = Quaternion.LookRotation(vel.normalized);
+                    gameObject.transform.forward = crawlForwardVector;
+                    currState = movementState.sneak;
 
-                //    Vector3 crouchSize = body.transform.localScale;
-                //    crouchSize.y = crouchHeight;
-                //    body.transform.localScale = crouchSize;
-                //    inCrouchMode = true;
+                    Vector3 newPos = hit2.point;
+                    if(newPos != Vector3.zero)
+                    {
+                        newPos += crawlForwardVector.normalized * ((gameObject.transform.lossyScale.y / 4));
+                    } else
+                    {
+                        newPos = gameObject.transform.position;
+                    }
+                    gameObject.transform.position = newPos;
 
-                //    if (gameObject.transform.forward.x != 0)
-                //    {
-                //        moveLock = movementLock.LR;
-                //    }
-                //    else if (gameObject.transform.forward.z != 0)
-                //    {
-                //        moveLock = movementLock.FB;
-                //    }
-                //}
+                    Vector3 crouchSize = body.transform.localScale;
+                    crouchSize.y = crouchHeight;
+                    body.transform.localScale = crouchSize;
+                    inCrouchMode = true;
+
+                    if (gameObject.transform.forward.x != 0)
+                    {
+                        moveLock = movementLock.LR;
+                    }
+                    else if (gameObject.transform.forward.z != 0)
+                    {
+                        moveLock = movementLock.FB;
+                    }
+                }
             }
         }
         //CRAWL modes DETECTION END
