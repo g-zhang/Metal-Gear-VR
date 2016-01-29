@@ -12,7 +12,7 @@ public class MovementController : MonoBehaviour {
     public float FPVRotationDecel = .6f;
 
     public float crouchHeight = .75f;
-    public float sneakCrouchWallBuffer = 0.35f; //amount of distance to move the player away from the wall when crawling from a sneaked crouch position
+    public float sneakCrouchWallBuffer = 0.0f; //amount of distance to move the player away from the wall when crawling from a sneaked crouch position
 
     BoxCollider boxcollider;
 
@@ -94,14 +94,6 @@ public class MovementController : MonoBehaviour {
                 bigBossMode = false;
                 print("Invincibility Mode DE-ACTIVATED!");
             }
-        }
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            print("Circle Button: Punch!");
-        }
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            print("Square Button: Grab!");
         }
         if (Input.GetKey(KeyCode.W))
         {
