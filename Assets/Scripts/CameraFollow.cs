@@ -2,6 +2,9 @@
 using System.Collections;
 
 public class CameraFollow : MonoBehaviour {
+	public enum camState { def/*ault*/ = 0, sneak, hall};
+	camState curCamState;
+
     public GameObject player;
 	public float cameraSpeed;
 	public GameObject mainCam;
@@ -17,30 +20,24 @@ public class CameraFollow : MonoBehaviour {
 	Vector3 newPos;
 	Vector3 camPos;
 
-	bool sneakCam = false;
 	int currentEdge;
 
 	void Start() {
 		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
 		currentEdge = -1;
 		defaultMainCamRotation = mainCam.transform.rotation;
+		curCamState = camState.def;
 	}
 
 	void Update () {
-		// camPos + playerPos are just shortcuts
 		gameObjPos = gameObject.transform.position;
 		playerPos = player.transform.position;
 
 		// Default position
-		if (!sneakCam) {
+		if (curCamState == camState.def) {
 
 			// Make sure main cam is in default position
 			mainCam.transform.position = Vector3.Slerp(mainCam.transform.position, camPos, 0.2f);
-
-//			Quaternion targetRotation = Quaternion.LookRotation (transform.position - mainCam.transform.position);
-//			float str = Mathf.Min (0.5f * Time.deltaTime, 1f);
-//			mainCam.transform.rotation = Quaternion.Lerp (transform.rotation, targetRotation, str);
-
 
 			// Position of cameraContainer after checks
 			newPos = gameObjPos;
@@ -67,8 +64,9 @@ public class CameraFollow : MonoBehaviour {
 			// Move camera
 			gameObject.transform.position = newPos;
 		} 
+
 		// Sneak cam position
-		else {
+		else if (curCamState == camState.sneak) {
 			// Delay until camera is actually moving into sneakCam
 			if (timeTilSneakCam < sneakCamDelay)
 				timeTilSneakCam += Time.deltaTime;
@@ -79,12 +77,12 @@ public class CameraFollow : MonoBehaviour {
 		}
 	}
 
-	// 
 	public void activateSneakCam(int direction, Vector3 camMoveDirection) {
 		// Set it up once and be done this is really hacky
-		if (!sneakCam || currentEdge != direction) {
-			//print ("Im at edge yo");
+		if (curCamState != camState.sneak || currentEdge != direction) {
+			// Set states
 			currentEdge = direction;
+			curCamState = camState.sneak;
 
 			// Load up camPos with init location
 			camPos = camMoveDirection;
@@ -96,48 +94,65 @@ public class CameraFollow : MonoBehaviour {
 
 			// At left edge
 			if (direction == 0) {
-				print ("left");
-
-				// print ("camMoveDirection: " + camPos);
-				// print ("player.transform.forward(" + player.transform.forward +
-				//   ") * 3 = " + (player.transform.forward * 3));
-				// print ("-1 * player.transform.right(" + (-1 * player.transform.right));
-
 				// Move to the front of character
 				camPos += player.transform.forward * 3;
 				// Move to direction of the hallway
 				camPos += (-0.5f * player.transform.right);
 
 				sneakCamLookAtPosition += (-1 * player.transform.right);
-
-				// print ("Edited camPos: " + camPos);
 			}
 			// At right edge
 			if (direction == 1) {
-				print ("right");
-
 				// Move to the front of character
 				camPos += player.transform.forward * 3;
 				// Move to direction of the hallway
 				camPos += (0.5f * player.transform.right);
 
 				sneakCamLookAtPosition += player.transform.right;
-
 			}
 			// At both (1 block wide wall)
 			if (direction == 3) {
 				print ("both");
 
-				// Move to the front of character
-				camPos += player.transform.forward * 3;
+				camPos = (player.transform.forward * 3) + player.transform.position;
 			}
-			sneakCam = true;
+
+			// Check if camPos will intersect a wall
+			RaycastHit wallCheck;
+
+			/*
+			// Keeping this here for one commit for reference purposes
+			// Check 3 meters above where cam would have moved and see if
+			// 	the ray collides with anything
+			if (Physics.Raycast (new Vector3 (camPos.x, camPos.y + 3, camPos.z), 
+				new Vector3 (0f, -1f, 0f), out wallCheck, 4f)) {
+				// If it collides with a wall, move camera higher
+				if (wallCheck.collider.tag == "Wall") {
+					print ("THIS CAM WILL BE IN A WALL");
+					camPos.y += 2f;
+				}
+			}
+			*/
+
+			// Check if camPos will have a wall in between player and cam
+			if (Physics.Raycast (player.transform.position, (camPos - player.transform.position),
+				out wallCheck, Vector3.Magnitude(camPos - player.transform.position))) {
+				// If it collides with a wall, move camera closer
+				if (wallCheck.collider.tag == "Wall") {
+					// print ("THIS IS GOING TO VIEW A WALL");
+					camPos.x = wallCheck.point.x;
+					camPos.z = wallCheck.point.z;
+					camPos.y += 2f;
+				}
+			}
 		}
+//		Debug.DrawRay (new Vector3 (camPos.x, camPos.y + 3, camPos.z), 
+//			new Vector3 (0f, -4f, 0f), Color.magenta);
+//		Debug.DrawRay (player.transform.position, (camPos - player.transform.position), Color.cyan);
 	}
 
 	public void deactivateSneakCam() {
-		//print ("Im securely hidden");
-		sneakCam = false;
+		curCamState = camState.def;
 		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
 		timeTilSneakCam = 0;
 
