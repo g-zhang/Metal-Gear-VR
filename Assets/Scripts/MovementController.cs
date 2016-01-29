@@ -185,10 +185,6 @@ public class MovementController : MonoBehaviour {
 					rightEdge = false;
 			}
 
-			// For cam direction purposes, move point forward
-			leftPosition += body.transform.forward;
-			rightPosition += body.transform.forward;
-
 			if (leftEdge && rightEdge) {
 				CameraController.S.GetComponent<CameraFollow> ().activateSneakCam (3, leftPosition+rightPosition);
 			} else if (leftEdge) {

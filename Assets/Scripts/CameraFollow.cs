@@ -9,6 +9,8 @@ public class CameraFollow : MonoBehaviour {
 	// Time before camera moves to sneakCam
 	public float sneakCamDelay;
 	float timeTilSneakCam;
+	Quaternion defaultMainCamRotation;
+	Vector3 sneakCamLookAtPosition;
 
 	Vector3 gameObjPos;
 	Vector3 playerPos;
@@ -21,6 +23,7 @@ public class CameraFollow : MonoBehaviour {
 	void Start() {
 		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
 		currentEdge = -1;
+		defaultMainCamRotation = mainCam.transform.rotation;
 	}
 
 	void Update () {
@@ -70,7 +73,8 @@ public class CameraFollow : MonoBehaviour {
 			if (timeTilSneakCam < sneakCamDelay)
 				timeTilSneakCam += Time.deltaTime;
 			else {
-				mainCam.transform.position = Vector3.Slerp (mainCam.transform.position, camPos, 0.2f);
+				mainCam.transform.position = Vector3.Lerp (mainCam.transform.position, camPos, 0.2f);
+				mainCam.transform.LookAt (sneakCamLookAtPosition);
 			}
 		}
 	}
@@ -79,26 +83,55 @@ public class CameraFollow : MonoBehaviour {
 	public void activateSneakCam(int direction, Vector3 camMoveDirection) {
 		// Set it up once and be done this is really hacky
 		if (!sneakCam || currentEdge != direction) {
-			print ("Im at edge yo");
+			//print ("Im at edge yo");
 			currentEdge = direction;
+
+			// Load up camPos with init location
+			camPos = camMoveDirection;
+			// Bring cam down
+			camPos.y -= 2.5f;
+
+			// Figure out where sneak cam is going to look at
+			sneakCamLookAtPosition = player.transform.position;
+
 			// At left edge
 			if (direction == 0) {
 				print ("left");
-				camPos = new Vector3 (playerPos.x - 3f, playerPos.y, playerPos.z - 3f);
+
+				// print ("camMoveDirection: " + camPos);
+				// print ("player.transform.forward(" + player.transform.forward +
+				//   ") * 3 = " + (player.transform.forward * 3));
+				// print ("-1 * player.transform.right(" + (-1 * player.transform.right));
+
+				// Move to the front of character
+				camPos += player.transform.forward * 3;
+				// Move to direction of the hallway
+				camPos += (-0.5f * player.transform.right);
+
+				sneakCamLookAtPosition += (-1 * player.transform.right);
+
+				// print ("Edited camPos: " + camPos);
 			}
 			// At right edge
 			if (direction == 1) {
 				print ("right");
-				camPos = new Vector3 (playerPos.x - 3f, playerPos.y, playerPos.z - 3f);
+
+				// Move to the front of character
+				camPos += player.transform.forward * 3;
+				// Move to direction of the hallway
+				camPos += (0.5f * player.transform.right);
+
+				sneakCamLookAtPosition += player.transform.right;
+
 			}
 			// At both (1 block wide wall)
 			if (direction == 3) {
 				print ("both");
-				camPos = new Vector3 (playerPos.x - 3f, playerPos.y, playerPos.z - 3f);
+
+				// Move to the front of character
+				camPos += player.transform.forward * 3;
 			}
 			sneakCam = true;
-
-			camPos = camMoveDirection;
 		}
 	}
 
@@ -107,5 +140,7 @@ public class CameraFollow : MonoBehaviour {
 		sneakCam = false;
 		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
 		timeTilSneakCam = 0;
+
+		mainCam.transform.rotation = defaultMainCamRotation;
 	}
 }
