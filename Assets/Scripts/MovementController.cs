@@ -2,7 +2,6 @@
 using System.Collections;
 
 public class MovementController : MonoBehaviour {
-    static MovementController Snake;
     public bool bigBossMode = false; //enemies cannot see you when true 
 
 	public float speed = 3.8f;
@@ -67,11 +66,6 @@ public class MovementController : MonoBehaviour {
         crawlForwardVector = body.transform.forward;
         body.transform.Rotate(new Vector3(90f, 0f, 0f));
         return crawlForwardVector;
-    }
-
-    void Awake()
-    {
-        Snake = this;
     }
 
     // Use this for initialization
@@ -341,7 +335,10 @@ public class MovementController : MonoBehaviour {
             {
                 inCrouchMode = false;
                 body.transform.localScale = defaultPlayerSize;
-                currState = movementState.run;
+                if(currState != movementState.sneak)
+                {
+                    currState = movementState.run;
+                }
             }
 			else if (currState == movementState.run || currState == movementState.sneak)
 			{
