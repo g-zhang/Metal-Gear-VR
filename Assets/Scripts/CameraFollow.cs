@@ -36,6 +36,11 @@ public class CameraFollow : MonoBehaviour {
 		// Default position
 		if (curCamState == camState.def) {
 
+			if (isInHall ())
+				activateHallCam ();
+			else
+				deactivateHallCam ();
+
 			// Make sure main cam is in default position
 			mainCam.transform.position = Vector3.Slerp(mainCam.transform.position, camPos, 0.2f);
 
@@ -120,35 +125,17 @@ public class CameraFollow : MonoBehaviour {
 			// Check if camPos will intersect a wall
 			RaycastHit wallCheck;
 
-			/*
-			// Keeping this here for one commit for reference purposes
-			// Check 3 meters above where cam would have moved and see if
-			// 	the ray collides with anything
-			if (Physics.Raycast (new Vector3 (camPos.x, camPos.y + 3, camPos.z), 
-				new Vector3 (0f, -1f, 0f), out wallCheck, 4f)) {
-				// If it collides with a wall, move camera higher
-				if (wallCheck.collider.tag == "Wall") {
-					print ("THIS CAM WILL BE IN A WALL");
-					camPos.y += 2f;
-				}
-			}
-			*/
-
 			// Check if camPos will have a wall in between player and cam
 			if (Physics.Raycast (player.transform.position, (camPos - player.transform.position),
 				out wallCheck, Vector3.Magnitude(camPos - player.transform.position))) {
 				// If it collides with a wall, move camera closer
 				if (wallCheck.collider.tag == "Wall") {
-					// print ("THIS IS GOING TO VIEW A WALL");
 					camPos.x = wallCheck.point.x;
 					camPos.z = wallCheck.point.z;
 					camPos.y += 2f;
 				}
 			}
 		}
-//		Debug.DrawRay (new Vector3 (camPos.x, camPos.y + 3, camPos.z), 
-//			new Vector3 (0f, -4f, 0f), Color.magenta);
-//		Debug.DrawRay (player.transform.position, (camPos - player.transform.position), Color.cyan);
 	}
 
 	public void deactivateSneakCam() {
@@ -157,5 +144,45 @@ public class CameraFollow : MonoBehaviour {
 		timeTilSneakCam = 0;
 
 		mainCam.transform.rotation = defaultMainCamRotation;
+	}
+
+	public bool isInHall() {
+		// Raycast in 4 directionsby 1.5 meters
+		bool up, down, left, right;
+		RaycastHit upHit, downHit, leftHit, rightHit;
+
+		Debug.DrawRay (player.transform.position, new Vector3 (0f, 0f, 1f), Color.blue);
+		Debug.DrawRay (player.transform.position, new Vector3 (0f, 0f, -1f), Color.red);
+		Debug.DrawRay (player.transform.position, new Vector3 (-1f, 0f, 0f), Color.cyan);
+		Debug.DrawRay (player.transform.position, new Vector3 (1f, 0f, 0f), Color.green);
+
+		up = Physics.Raycast (player.transform.position, new Vector3(0f, 0f, 1f), out upHit);
+		down = Physics.Raycast (player.transform.position, new Vector3(0f, 0f, -1f), out downHit);
+		left = Physics.Raycast (player.transform.position, new Vector3(-1f, 0f, 0f), out leftHit);
+		right = Physics.Raycast (player.transform.position, new Vector3(1f, 0f, 0f), out rightHit);
+
+		// If up and down hit things
+		if (up && down) {
+			if ((upHit.distance + downHit.distance) > 1.5f &&
+			   (upHit.distance + downHit.distance) < 2.5f) {
+				print ("I AM IN A HORIZ HALL");
+			}
+		}
+
+		// If left and right hit things
+		if (left && right) {
+			if ((leftHit.distance + rightHit.distance) > 1.5f &&
+				(leftHit.distance + rightHit.distance) < 2.5f) {
+				print ("I AM IN A VERT HALL");
+			}
+		}
+
+		return true;
+	}
+	public void activateHallCam() {
+
+	}
+	public void deactivateHallCam() {
+
 	}
 }

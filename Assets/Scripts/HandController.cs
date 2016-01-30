@@ -3,7 +3,7 @@ using System.Collections;
 
 public class HandController : MonoBehaviour {
 
-    HandController S;
+    public static HandController S;
     public GameObject RightHand;
 
     public AudioSource knockSound;
@@ -42,6 +42,7 @@ public class HandController : MonoBehaviour {
     void Awake()
     {
         S = this;
+
     }
 
 	// Use this for initialization
