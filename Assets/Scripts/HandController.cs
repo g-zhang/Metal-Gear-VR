@@ -4,14 +4,24 @@ using System.Collections;
 public class HandController : MonoBehaviour {
 
     public static HandController S;
+    public GameObject LeftHand;
     public GameObject RightHand;
+    public float punchDistance = 1f;
+    public float punchSwingOffset = .25f; //distance snakes punches towards center
+    public float punchSpeed = 10f;
+    float punchSideSpeed; 
+    float punchAnimationTime;
+    float currLeftAnimTime;
+    float currRightAnimTime;
 
     public AudioSource knockSound;
     public float handMoveDistance = .3f;
     public float knockSpeed = 5f;
     float knockAnimationTime;
     float currAnimationTime = 0f;
-    float initHandPos;
+
+    Vector3 initLeftHandPos;
+    Vector3 initRightHandPos;
 
     Vector3 knockLocation = Vector3.zero;
     public int knockFrameCount = 2;
@@ -47,8 +57,13 @@ public class HandController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        initHandPos = RightHand.transform.localPosition.z;
+        initLeftHandPos = LeftHand.transform.localPosition;
+        initRightHandPos = RightHand.transform.localPosition;
         knockAnimationTime = (handMoveDistance / knockSpeed) * 2f;
+        punchAnimationTime = (punchDistance / punchSpeed) * 2f;
+        punchSideSpeed = (punchSwingOffset) / punchAnimationTime * 2f;
+        currLeftAnimTime = punchAnimationTime;
+        currRightAnimTime = punchAnimationTime;
 	}
 
 
@@ -73,7 +88,7 @@ public class HandController : MonoBehaviour {
         {
             RightHand.transform.localPosition = new Vector3(RightHand.transform.localPosition.x,
                                                                     RightHand.transform.localPosition.y,
-                                                                    initHandPos - Mathf.PingPong(currAnimationTime * knockSpeed, handMoveDistance));
+                                                                    initRightHandPos.z - Mathf.PingPong(currAnimationTime * knockSpeed, handMoveDistance));
 
             //Debug.DrawRay(RightHand.transform.position, -transform.forward.normalized * .25f, Color.green);
             if(currAnimationTime <= knockAnimationTime / 2f
@@ -84,22 +99,57 @@ public class HandController : MonoBehaviour {
                 isKnocking = true;
                 knockLocation = RightHand.transform.TransformPoint(new Vector3(RightHand.transform.localPosition.x,
                                                                     RightHand.transform.localPosition.y,
-                                                                    initHandPos));
+                                                                    initRightHandPos.z));
+                knockSound.Stop();
                 knockSound.Play();
             }
             currAnimationTime -= Time.deltaTime;
         }
-        else
+        else if(MovementController.player.currState == MovementController.movementState.sneak)
         {
             RightHand.transform.localPosition = new Vector3(RightHand.transform.localPosition.x,
                                                                     RightHand.transform.localPosition.y,
-                                                                    initHandPos);
+                                                                    initRightHandPos.z);
         }
     }
-	
-	// Update is called once per frame
-	void Update () {
+
+    void LeftHandPunch()
+    {
+        if(currLeftAnimTime < punchAnimationTime)
+        {
+            LeftHand.transform.localPosition = new Vector3(initLeftHandPos.x + Mathf.PingPong(currLeftAnimTime * punchSideSpeed, punchSwingOffset),
+                                                            LeftHand.transform.localPosition.y,
+                                                            initLeftHandPos.z + Mathf.PingPong(currLeftAnimTime * punchSpeed, punchDistance));
+
+            currLeftAnimTime += Time.deltaTime;
+        }
+        else
+        {
+            LeftHand.transform.localPosition = initLeftHandPos;
+        }
+    }
+
+    void RightHandPunch()
+    {
+        if (currRightAnimTime < punchAnimationTime)
+        {
+            RightHand.transform.localPosition = new Vector3(initRightHandPos.x - Mathf.PingPong(currRightAnimTime * punchSideSpeed, punchSwingOffset),
+                                                            RightHand.transform.localPosition.y,
+                                                            initRightHandPos.z + Mathf.PingPong(currRightAnimTime * punchSpeed, punchDistance));
+
+            currRightAnimTime += Time.deltaTime;
+        }
+        else if(MovementController.player.currState != MovementController.movementState.sneak)
+        {
+            RightHand.transform.localPosition = initRightHandPos;
+        }
+    }
+
+    // Update is called once per frame
+    void Update () {
         performKnocks();
+        LeftHandPunch();
+        RightHandPunch();
 
         //input
         if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.sneak)
@@ -110,10 +160,12 @@ public class HandController : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.run)
         {
             print("Circle Button: Punch!");
+            currLeftAnimTime = 0;
         }
         if (Input.GetKeyDown(KeyCode.Q))
         {
             print("Square Button: Grab!");
+            currRightAnimTime = 0;
         }
 
     }
