@@ -6,13 +6,26 @@ public class HandController : MonoBehaviour {
     public static HandController S;
     public GameObject LeftHand;
     public GameObject RightHand;
+    public GameObject RightLeg;
+
+    //public float comboCooldown = 
+
     public float punchDistance = 1f;
     public float punchSwingOffset = .25f; //distance snakes punches towards center
     public float punchSpeed = 10f;
-    float punchSideSpeed; 
-    float punchAnimationTime;
+    float punchSideSpeed; //calculated in Start()
+    float punchAnimationTime; //calculated in Start()
     float currLeftAnimTime;
     float currRightAnimTime;
+
+    public float kickDistance = 2f;
+    public float kickHeight = 1f;
+    public float kickSideDistance = .25f;
+    public float kickSpeed = 15f;
+    float kickUpwardSpeed; //calculated in Start()
+    float kickSideSpeed; //calculated in Start()
+    float kickAnimationTime; //calculated in Start()
+    float currKickAnimTime;
 
     public AudioSource knockSound;
     public float handMoveDistance = .3f;
@@ -22,6 +35,7 @@ public class HandController : MonoBehaviour {
 
     Vector3 initLeftHandPos;
     Vector3 initRightHandPos;
+    Vector3 initRightLegPos;
 
     Vector3 knockLocation = Vector3.zero;
     public int knockFrameCount = 2;
@@ -59,11 +73,20 @@ public class HandController : MonoBehaviour {
 	void Start () {
         initLeftHandPos = LeftHand.transform.localPosition;
         initRightHandPos = RightHand.transform.localPosition;
+        initRightLegPos = RightLeg.transform.localPosition;
+
         knockAnimationTime = (handMoveDistance / knockSpeed) * 2f;
         punchAnimationTime = (punchDistance / punchSpeed) * 2f;
         punchSideSpeed = (punchSwingOffset) / punchAnimationTime * 2f;
+
+        kickAnimationTime = (kickDistance / kickSpeed) * 2f;
+        kickUpwardSpeed = (kickHeight) / kickAnimationTime * 2f;
+        kickSideSpeed = kickSideDistance / kickAnimationTime * 2f;
+        
+
         currLeftAnimTime = punchAnimationTime;
         currRightAnimTime = punchAnimationTime;
+        currKickAnimTime = kickAnimationTime;
 	}
 
 
@@ -145,11 +168,28 @@ public class HandController : MonoBehaviour {
         }
     }
 
+    void RightKick()
+    {
+        if (currKickAnimTime < kickAnimationTime)
+        {
+            RightLeg.transform.localPosition = new Vector3(initRightLegPos.x - Mathf.PingPong(currKickAnimTime * kickSideSpeed, kickSideDistance),
+                                                            initRightLegPos.y + Mathf.PingPong(currKickAnimTime * kickUpwardSpeed, kickHeight),
+                                                            initRightLegPos.z + Mathf.PingPong(currKickAnimTime * kickSpeed, kickDistance));
+
+            currKickAnimTime += Time.deltaTime;
+        }
+        else
+        {
+            RightLeg.transform.localPosition = initRightLegPos;
+        }
+    }
+
     // Update is called once per frame
     void Update () {
         performKnocks();
         LeftHandPunch();
         RightHandPunch();
+        RightKick();
 
         //input
         if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.sneak)
@@ -165,7 +205,7 @@ public class HandController : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.Q))
         {
             print("Square Button: Grab!");
-            currRightAnimTime = 0;
+            currKickAnimTime = 0;
         }
 
     }
