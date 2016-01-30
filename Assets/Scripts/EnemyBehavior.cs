@@ -2,6 +2,8 @@
 using System.Collections;
 
 public class EnemyBehavior : MonoBehaviour {
+	public enum enemyState { def/*ault*/ = 0, alert, searching};
+	enemyState curEnemyState;
 
     public GameObject nextPoint;
     Rigidbody body;
@@ -16,7 +18,6 @@ public class EnemyBehavior : MonoBehaviour {
 
 	Vector3 pointDirection;
 
-	bool alerted = false;
 	bool alertSoundPlayed = false;
 
 	Vector3 soundLocation;
@@ -27,12 +28,13 @@ public class EnemyBehavior : MonoBehaviour {
         agn = gameObject.GetComponent<NavMeshAgent>();
 		currentPoint = nextPoint;
 		soundLocation = Vector3.zero;
+		curEnemyState = enemyState.def;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		// Default State
-		if (!alerted) {
+		if (curEnemyState == enemyState.def) {
 			// Once the point changes...
 			if (currentPoint != nextPoint) {
 				// Start countdown timer
@@ -54,29 +56,20 @@ public class EnemyBehavior : MonoBehaviour {
 					agn.destination = nextPoint.transform.position;
 				}
 			}
-
-			// Enemy Hearing
-			// Check to see if player is knocking
-			print (HandController.S.isCurrentlyKnocking());
-			if (HandController.S.isCurrentlyKnocking ()) {
-				print ("I HEAR A KNOCK");
-				// Check distance between self and player
-				soundLocation = HandController.S.transform.position;
-				Debug.DrawLine(body.transform.position, soundLocation, Color.green,1f);
-				if (Vector3.Magnitude (soundLocation - body.transform.position) <= 5f) {
-					// If the player made a sound withing 5 meters of enemy
-					//	then make enemy alerted
-					print ("What was that noise?");
-					soundLocation = MovementController.player.transform.position;
-					alerted = true;
-				}
-			}
 		} 
 		// Alerted State
-		else {
-			// Investigate soundLocation
-			agn.destination = soundLocation;
+		else if (curEnemyState == enemyState.alert) {
+
+
 		}
+		// Searching State
+		else if (curEnemyState == enemyState.searching) {
+
+		}
+
+		print (curEnemyState);
+
+		// UNIVERSAL FOR ALL STATES
 
 		// Enemy vision
 		// If player is within the 90 degree vision cone and is 4 away...
@@ -98,6 +91,26 @@ public class EnemyBehavior : MonoBehaviour {
 		} else {
 			agn.Resume ();
 			alertSoundPlayed = false;
+		}
+
+		// Enemy Hearing
+		// Check to see if player is knocking
+		print (HandController.S.isCurrentlyKnocking ());
+		if (HandController.S.isCurrentlyKnocking ()) {
+			
+			soundLocation = MovementController.player.transform.position;
+
+			// Check distance between self and sound location
+			if (Vector3.Magnitude (soundLocation - body.transform.position) <= 5f) {
+				// If the player made a sound withing 5 meters of enemy
+				//	then make enemy alerted
+				Debug.DrawLine (body.transform.position, soundLocation, Color.green, 1f);
+				print ("What was that noise?");
+				agn.destination = soundLocation;
+				curEnemyState = enemyState.alert;
+			} else {
+				Debug.DrawLine (body.transform.position, soundLocation, Color.red, 1f);
+			}
 		}
 
 	}
