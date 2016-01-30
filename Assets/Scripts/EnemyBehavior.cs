@@ -2,8 +2,13 @@
 using System.Collections;
 
 public class EnemyBehavior : MonoBehaviour {
+	
 	public enum enemyState { def/*ault*/ = 0, alert, searching};
 	enemyState curEnemyState;
+
+	public enum radar {sight = 0, alert};
+	public SpriteRenderer sightConeRenderer;
+	public Sprite[] radarSprites;
 
     public GameObject nextPoint;
     Rigidbody body;
@@ -14,10 +19,9 @@ public class EnemyBehavior : MonoBehaviour {
 	public float timeTilMove;
 	GameObject currentPoint;
 
-	public AudioSource alertSound;
-
 	Vector3 pointDirection;
 
+	public AudioSource alertSound;
 	bool alertSoundPlayed = false;
 
 	Vector3 soundLocation;
@@ -35,6 +39,8 @@ public class EnemyBehavior : MonoBehaviour {
 	void Update () {
 		// Default State
 		if (curEnemyState == enemyState.def) {
+			sightConeRenderer.sprite = radarSprites[(int)radar.sight];
+
 			// Once the point changes...
 			if (currentPoint != nextPoint) {
 				// Start countdown timer
@@ -59,15 +65,22 @@ public class EnemyBehavior : MonoBehaviour {
 		} 
 		// Alerted State
 		else if (curEnemyState == enemyState.alert) {
+			// Change sightcone red
+			sightConeRenderer.sprite = radarSprites[(int)radar.alert];
 
-
+			// Once you reach the sound location (with some bounce room)
+			if (Vector3.Magnitude (transform.position - agn.destination) <= 0.8f) {
+				// Go into search state
+				curEnemyState = enemyState.searching;
+			}
 		}
 		// Searching State
 		else if (curEnemyState == enemyState.searching) {
+			// Stop moving
+			agn.Stop ();
+			print ("IM LOOKING FOR THE SOURCE OF SOUND");
 
 		}
-
-		print (curEnemyState);
 
 		// UNIVERSAL FOR ALL STATES
 
@@ -94,22 +107,23 @@ public class EnemyBehavior : MonoBehaviour {
 		}
 
 		// Enemy Hearing
-		// Check to see if player is knocking
-		print (HandController.S.isCurrentlyKnocking ());
-		if (HandController.S.isCurrentlyKnocking ()) {
+		// Check to see if player is knocking only if not searching
+		if (curEnemyState != enemyState.searching) {
+			if (HandController.S.isCurrentlyKnocking ()) {
 			
-			soundLocation = MovementController.player.transform.position;
+				soundLocation = MovementController.player.transform.position;
 
-			// Check distance between self and sound location
-			if (Vector3.Magnitude (soundLocation - body.transform.position) <= 5f) {
-				// If the player made a sound withing 5 meters of enemy
-				//	then make enemy alerted
-				Debug.DrawLine (body.transform.position, soundLocation, Color.green, 1f);
-				print ("What was that noise?");
-				agn.destination = soundLocation;
-				curEnemyState = enemyState.alert;
-			} else {
-				Debug.DrawLine (body.transform.position, soundLocation, Color.red, 1f);
+				// Check distance between self and sound location
+				if (Vector3.Magnitude (soundLocation - body.transform.position) <= 5f) {
+					// If the player made a sound withing 5 meters of enemy
+					//	then make enemy alerted
+					Debug.DrawLine (body.transform.position, soundLocation, Color.green, 1f);
+					print ("What was that noise?");
+					agn.destination = soundLocation;
+					curEnemyState = enemyState.alert;
+				} else {
+					Debug.DrawLine (body.transform.position, soundLocation, Color.red, 1f);
+				}
 			}
 		}
 
