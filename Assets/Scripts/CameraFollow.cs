@@ -12,7 +12,8 @@ public class CameraFollow : MonoBehaviour {
 	// Time before camera moves to sneakCam
 	public float sneakCamDelay;
 	float timeTilSneakCam;
-	Quaternion defaultMainCamRotation;
+	public Quaternion defaultMainCamRotation;
+	Quaternion hallMainCamRotation;
 	Vector3 sneakCamLookAtPosition;
 
 	Vector3 gameObjPos;
@@ -26,6 +27,8 @@ public class CameraFollow : MonoBehaviour {
 		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
 		currentEdge = -1;
 		defaultMainCamRotation = mainCam.transform.rotation;
+		// lol i cheated oops
+		hallMainCamRotation = new Quaternion (0.7372774f, 0f, 0f, 0.6755902f);
 		curCamState = camState.def;
 	}
 
@@ -33,8 +36,19 @@ public class CameraFollow : MonoBehaviour {
 		gameObjPos = gameObject.transform.position;
 		playerPos = player.transform.position;
 
-		// Default position
-		if (curCamState == camState.def) {
+
+		// Sneak cam position
+		if (curCamState == camState.sneak) {
+			// Delay until camera is actually moving into sneakCam
+			if (timeTilSneakCam < sneakCamDelay)
+				timeTilSneakCam += Time.deltaTime;
+			else {
+				mainCam.transform.position = Vector3.Lerp (mainCam.transform.position, camPos, 0.2f);
+				mainCam.transform.LookAt (sneakCamLookAtPosition);
+			}
+		} 
+		// Default + hall position
+		else {
 
 			if (isInHall ())
 				activateHallCam ();
@@ -42,7 +56,7 @@ public class CameraFollow : MonoBehaviour {
 				deactivateHallCam ();
 
 			// Make sure main cam is in default position
-			mainCam.transform.position = Vector3.Slerp(mainCam.transform.position, camPos, 0.2f);
+			mainCam.transform.position = Vector3.Lerp (mainCam.transform.position, camPos, 0.2f);
 
 			// Position of cameraContainer after checks
 			newPos = gameObjPos;
@@ -69,17 +83,6 @@ public class CameraFollow : MonoBehaviour {
 			// Move camera
 			gameObject.transform.position = newPos;
 		} 
-
-		// Sneak cam position
-		else if (curCamState == camState.sneak) {
-			// Delay until camera is actually moving into sneakCam
-			if (timeTilSneakCam < sneakCamDelay)
-				timeTilSneakCam += Time.deltaTime;
-			else {
-				mainCam.transform.position = Vector3.Lerp (mainCam.transform.position, camPos, 0.2f);
-				mainCam.transform.LookAt (sneakCamLookAtPosition);
-			}
-		}
 	}
 
 	public void activateSneakCam(int direction, Vector3 camMoveDirection) {
@@ -150,6 +153,7 @@ public class CameraFollow : MonoBehaviour {
 		// Raycast in 4 directionsby 1.5 meters
 		bool up, down, left, right;
 		RaycastHit upHit, downHit, leftHit, rightHit;
+		bool inHall = false;
 
 		Debug.DrawRay (player.transform.position, new Vector3 (0f, 0f, 1f), Color.blue);
 		Debug.DrawRay (player.transform.position, new Vector3 (0f, 0f, -1f), Color.red);
@@ -165,24 +169,34 @@ public class CameraFollow : MonoBehaviour {
 		if (up && down) {
 			if ((upHit.distance + downHit.distance) > 1.5f &&
 			   (upHit.distance + downHit.distance) < 2.5f) {
-				print ("I AM IN A HORIZ HALL");
+				inHall = true;
 			}
 		}
 
 		// If left and right hit things
 		if (left && right) {
 			if ((leftHit.distance + rightHit.distance) > 1.5f &&
-				(leftHit.distance + rightHit.distance) < 2.5f) {
-				print ("I AM IN A VERT HALL");
+			    (leftHit.distance + rightHit.distance) < 2.5f) {
+				inHall = true;
 			}
 		}
 
-		return true;
+		if (inHall) {
+			// Only return true if there's a wall "down"
+			return (downHit.collider.tag == "Wall");
+		}
+		return false;
+
 	}
 	public void activateHallCam() {
-
+		curCamState = camState.hall;
+		camPos = transform.position + new Vector3 (0f, 6.5f, -0.2f);
+		mainCam.transform.rotation = Quaternion.Lerp(mainCam.transform.rotation, hallMainCamRotation, 0.1f);
 	}
 	public void deactivateHallCam() {
+		curCamState = camState.def;
+		camPos = transform.position + new Vector3 (0f, 6f, -1.5f);
 
+		mainCam.transform.rotation = defaultMainCamRotation;
 	}
 }
