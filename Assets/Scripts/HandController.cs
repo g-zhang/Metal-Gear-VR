@@ -10,7 +10,8 @@ public class HandController : MonoBehaviour {
     public GameObject RightHand;
     public GameObject RightLeg;
 
-    public float comboWindowTime = .2f; //window where another button press will continue the combo 
+    public float punchCooldown = .05f;
+    public float comboWindowTime = .2f; //window where another button press will continue the combo
     public float comboCooldown = .5f; //seconds of cooldown after executing full combo
     public float kickWindupTime = .05f; // seconds it takes for a kick to prepare
 
@@ -31,11 +32,18 @@ public class HandController : MonoBehaviour {
     float kickAnimationTime; //calculated in Start()
     float currKickAnimTime;
 
-    public AudioSource knockSound;
     public float handMoveDistance = .3f;
     public float knockSpeed = 5f;
     float knockAnimationTime;
     float currAnimationTime = 0f;
+
+    AudioSource playerAudio;
+    public AudioClip knockSound;
+    public AudioClip punchSound;
+    public AudioClip kickSound;
+    bool leftPunchSoundPlayed = false;
+    bool rightPunchSoundPlayed = false;
+    bool kickSoundPlayed = false;
 
     Vector3 initLeftHandPos;
     Vector3 initRightHandPos;
@@ -75,11 +83,12 @@ public class HandController : MonoBehaviour {
     void Awake()
     {
         S = this;
-
     }
 
 	// Use this for initialization
 	void Start () {
+        playerAudio = gameObject.GetComponent<AudioSource>();
+
         initLeftHandPos = LeftHand.transform.localPosition;
         initRightHandPos = RightHand.transform.localPosition;
         initRightLegPos = RightLeg.transform.localPosition;
@@ -92,7 +101,6 @@ public class HandController : MonoBehaviour {
         kickUpwardSpeed = (kickHeight) / kickAnimationTime * 2f;
         kickSideSpeed = kickSideDistance / kickAnimationTime * 2f;
         
-
         currLeftAnimTime = punchAnimationTime;
         currRightAnimTime = punchAnimationTime;
         currKickAnimTime = kickAnimationTime;
@@ -132,8 +140,7 @@ public class HandController : MonoBehaviour {
                 knockLocation = RightHand.transform.TransformPoint(new Vector3(RightHand.transform.localPosition.x,
                                                                     RightHand.transform.localPosition.y,
                                                                     initRightHandPos.z));
-                knockSound.Stop();
-                knockSound.Play();
+                playerAudio.PlayOneShot(knockSound, 1f);
             }
             currAnimationTime -= Time.deltaTime;
         }
@@ -146,17 +153,23 @@ public class HandController : MonoBehaviour {
     }
 
     void LeftHandPunch()
-    {
-        if(currLeftAnimTime < punchAnimationTime)
+    { 
+        if (currLeftAnimTime < punchAnimationTime)
         {
             LeftHand.transform.localPosition = new Vector3(initLeftHandPos.x + Mathf.PingPong(currLeftAnimTime * punchSideSpeed, punchSwingOffset),
                                                             LeftHand.transform.localPosition.y,
                                                             initLeftHandPos.z + Mathf.PingPong(currLeftAnimTime * punchSpeed, punchDistance));
 
+            if(!leftPunchSoundPlayed)
+            {
+                playerAudio.PlayOneShot(punchSound, 1f);
+                leftPunchSoundPlayed = true;
+            }
             currLeftAnimTime += Time.deltaTime;
         }
         else
         {
+            leftPunchSoundPlayed = false;
             LeftHand.transform.localPosition = initLeftHandPos;
         }
     }
@@ -168,12 +181,17 @@ public class HandController : MonoBehaviour {
             RightHand.transform.localPosition = new Vector3(initRightHandPos.x - Mathf.PingPong(currRightAnimTime * punchSideSpeed, punchSwingOffset),
                                                             RightHand.transform.localPosition.y,
                                                             initRightHandPos.z + Mathf.PingPong(currRightAnimTime * punchSpeed, punchDistance));
-
+            if (!rightPunchSoundPlayed)
+            {
+                playerAudio.PlayOneShot(punchSound, 1f);
+                rightPunchSoundPlayed = true;
+            }
             currRightAnimTime += Time.deltaTime;
         }
         else if(MovementController.player.currState != MovementController.movementState.sneak)
         {
             RightHand.transform.localPosition = initRightHandPos;
+            rightPunchSoundPlayed = false;
         }
     }
 
@@ -184,12 +202,17 @@ public class HandController : MonoBehaviour {
             RightLeg.transform.localPosition = new Vector3(initRightLegPos.x - Mathf.PingPong(currKickAnimTime * kickSideSpeed, kickSideDistance),
                                                             initRightLegPos.y + Mathf.PingPong(currKickAnimTime * kickUpwardSpeed, kickHeight),
                                                             initRightLegPos.z + Mathf.PingPong(currKickAnimTime * kickSpeed, kickDistance));
-
+            if (!kickSoundPlayed)
+            {
+                playerAudio.PlayOneShot(kickSound, 1f);
+                kickSoundPlayed = true;
+            }
             currKickAnimTime += Time.deltaTime;
         }
         else
         {
             RightLeg.transform.localPosition = initRightLegPos;
+            kickSoundPlayed = false;
         }
     }
 
@@ -220,7 +243,7 @@ public class HandController : MonoBehaviour {
                 isFighting = true;
                 currLeftAnimTime = 0;
                 currCombatState++;
-                curCooldown = punchAnimationTime;
+                curCooldown = punchAnimationTime + punchCooldown;
             }
             else if (currCombatState == PlayerCombatState.punch2)
             {
