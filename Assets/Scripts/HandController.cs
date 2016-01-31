@@ -5,6 +5,7 @@ public enum PlayerCombatState { punch1 = 0, punch2, kick, recovery };
 
 public class HandController : MonoBehaviour {
 
+    Rigidbody body;
     public static HandController S;
     public GameObject LeftHand;
     public GameObject RightHand;
@@ -31,6 +32,10 @@ public class HandController : MonoBehaviour {
     float kickSideSpeed; //calculated in Start()
     float kickAnimationTime; //calculated in Start()
     float currKickAnimTime;
+
+    public float punch1CharVelocity = .6f;
+    public float punch2CharVelocity = -.3f;
+    public float kickCharVelocity = -.4f;
 
     public float handMoveDistance = .3f;
     public float knockSpeed = 5f;
@@ -88,6 +93,7 @@ public class HandController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+        body = gameObject.GetComponent<Rigidbody>();
         playerAudio = gameObject.GetComponent<AudioSource>();
 
         initLeftHandPos = LeftHand.transform.localPosition;
@@ -238,7 +244,22 @@ public class HandController : MonoBehaviour {
 
         if(isFighting)
         {
-            isGrabbing = false;
+            if(isGrabbing)
+            {
+                isGrabbing = false;
+            }
+
+            //velocity states
+            if(currCombatState == PlayerCombatState.punch2)
+            {
+                body.velocity = body.transform.forward.normalized * punch1CharVelocity;
+            } else if(currCombatState == PlayerCombatState.kick)
+            {
+                body.velocity = body.transform.forward.normalized * punch2CharVelocity;
+            } else if (currCombatState == PlayerCombatState.recovery)
+            {
+                body.velocity = body.transform.forward.normalized * kickCharVelocity;
+            }
         }
     }
 
