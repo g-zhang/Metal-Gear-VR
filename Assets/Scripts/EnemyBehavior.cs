@@ -25,6 +25,7 @@ public class EnemyBehavior : MonoBehaviour {
 	bool alertSoundPlayed = false;
 	public float alertLookTime;
 	float timeTilTurn;
+	Vector3 turnDirection;
 	int numTurns; // how many turns performed
 
 	Vector3 soundLocation;
@@ -43,9 +44,11 @@ public class EnemyBehavior : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		agn.enabled = true;
+
 		// Default State
 		if (curEnemyState == enemyState.def) {
-			sightConeRenderer.sprite = radarSprites[(int)radar.sight];
+			sightConeRenderer.sprite = radarSprites [(int)radar.sight];
 
 			// Once the point changes...
 			if (currentPoint != nextPoint) {
@@ -72,7 +75,7 @@ public class EnemyBehavior : MonoBehaviour {
 		// Alerted State
 		else if (curEnemyState == enemyState.alert) {
 			// Change sightcone red
-			sightConeRenderer.sprite = radarSprites[(int)radar.alert];
+			sightConeRenderer.sprite = radarSprites [(int)radar.alert];
 
 			// Once you reach the sound location (with some bounce room)
 			if (Vector3.Magnitude (transform.position - agn.destination) <= 0.8f) {
@@ -83,16 +86,27 @@ public class EnemyBehavior : MonoBehaviour {
 		// Searching State
 		else if (curEnemyState == enemyState.searching) {
 			// Stop moving
-			agn.Stop ();
-			if (timeTilTurn < alertLookTime)
-				timeTilTurn += Time.deltaTime;
-			else {
-				print ("Rotating...");
-				body.transform.Rotate (0f, 90f, 0f);
-				timeTilTurn = 0f;
+			agn.enabled = false;
+
+			if (numTurns <= 2) {
+				if (timeTilTurn < alertLookTime)
+					timeTilTurn += Time.deltaTime;
+				else {
+					print ("Rotating...");
+					if (numTurns == 0)
+						turnDirection = body.transform.right;
+					if (numTurns == 1)
+						turnDirection = body.transform.forward * -1;
+					numTurns++;
+					timeTilTurn = 0f;
+				}
+				body.transform.rotation = Quaternion.LookRotation (Vector3.Slerp (body.transform.forward, turnDirection, rotationSpeed));
+			} else {
+				numTurns = 0;
+				curEnemyState = enemyState.def;
+				currentPoint = nextPoint;
 			}
 		}
-
 		// UNIVERSAL FOR ALL STATES
 
 		// Enemy vision
