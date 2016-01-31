@@ -56,6 +56,7 @@ public class HandController : MonoBehaviour {
     public bool _______________________________;
     public bool isKnocking = false;
     public bool isFighting = false;
+    public bool isGrabbing = false;
     public PlayerCombatState currCombatState = PlayerCombatState.punch1;
     float curCooldown = 0f;
     float curComboWindow = 0f;
@@ -160,7 +161,7 @@ public class HandController : MonoBehaviour {
                                                             LeftHand.transform.localPosition.y,
                                                             initLeftHandPos.z + Mathf.PingPong(currLeftAnimTime * punchSpeed, punchDistance));
 
-            if(!leftPunchSoundPlayed)
+            if(!leftPunchSoundPlayed && !isGrabbing)
             {
                 playerAudio.PlayOneShot(punchSound, 1f);
                 leftPunchSoundPlayed = true;
@@ -181,7 +182,7 @@ public class HandController : MonoBehaviour {
             RightHand.transform.localPosition = new Vector3(initRightHandPos.x - Mathf.PingPong(currRightAnimTime * punchSideSpeed, punchSwingOffset),
                                                             RightHand.transform.localPosition.y,
                                                             initRightHandPos.z + Mathf.PingPong(currRightAnimTime * punchSpeed, punchDistance));
-            if (!rightPunchSoundPlayed)
+            if (!rightPunchSoundPlayed && !isGrabbing)
             {
                 playerAudio.PlayOneShot(punchSound, 1f);
                 rightPunchSoundPlayed = true;
@@ -227,9 +228,17 @@ public class HandController : MonoBehaviour {
             isFighting = false;
         }
 
-        if(curCooldown > 0f)
+        if (curCooldown > 0f)
         {
             curCooldown -= Time.deltaTime;
+        } else if (isGrabbing)
+        {
+            isGrabbing = false;
+        }
+
+        if(isFighting)
+        {
+            isGrabbing = false;
         }
     }
 
@@ -267,7 +276,17 @@ public class HandController : MonoBehaviour {
         {
             queuedHits++;
         }
+    }
 
+    void GrabButtonPress()
+    {
+        if(curCooldown <= 0)
+        {
+            currLeftAnimTime = 0;
+            currRightAnimTime = 0;
+            curCooldown = punchAnimationTime;
+            isGrabbing = true;
+        }
     }
 
     // Update is called once per frame
@@ -281,7 +300,6 @@ public class HandController : MonoBehaviour {
         //input
         if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.sneak)
         {
-            print("Circle Button: Knock!");
             currAnimationTime = knockAnimationTime;
         }
         if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.run)
@@ -294,8 +312,7 @@ public class HandController : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            print("Square Button: Grab!");
-            currKickAnimTime = 0;
+            GrabButtonPress();
         }
 
     }
