@@ -232,11 +232,14 @@ public class MovementController : MonoBehaviour {
         }
 
         //MOVEMENT of the Character
-		// Speed and direction of movement depends on movementState
-        if(inFPVModeCrawlTransition > 0 && currState == movementState.crawl)
+        // Speed and direction of movement depends on movementState
+        if (inFPVModeCrawlTransition > 0 && currState == movementState.crawl)
         {
             inFPVModeCrawlTransition -= Time.deltaTime;
             body.velocity = lastForwardCrawlVector;
+        } else if(HandController.S.isFighting)
+        {
+            //don't set velocity here
         } else if (currState == movementState.run) {
 			body.velocity = vel.normalized * speed;
 		} else if(!FPVModeCrawlControl) {

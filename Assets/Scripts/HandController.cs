@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+public enum PlayerCombatState { punch1 = 0, punch2, kick, recovery };
+
 public class HandController : MonoBehaviour {
 
     public static HandController S;
@@ -8,7 +10,9 @@ public class HandController : MonoBehaviour {
     public GameObject RightHand;
     public GameObject RightLeg;
 
-    //public float comboCooldown = 
+    public float comboWindowTime = .2f; //window where another button press will continue the combo 
+    public float comboCooldown = .5f; //seconds of cooldown after executing full combo
+    public float kickWindupTime = .05f; // seconds it takes for a kick to prepare
 
     public float punchDistance = 1f;
     public float punchSwingOffset = .25f; //distance snakes punches towards center
@@ -43,6 +47,11 @@ public class HandController : MonoBehaviour {
 
     public bool _______________________________;
     public bool isKnocking = false;
+    public bool isFighting = false;
+    public PlayerCombatState currCombatState = PlayerCombatState.punch1;
+    float curCooldown = 0f;
+    float curComboWindow = 0f;
+    public int queuedHits = 0;
 
 
 
@@ -184,8 +193,63 @@ public class HandController : MonoBehaviour {
         }
     }
 
+    void CombatStateUpdate()
+    {
+        if(curComboWindow > 0f)
+        {
+            curComboWindow -= Time.deltaTime;
+        } else
+        {
+            currCombatState = PlayerCombatState.punch1;
+            isFighting = false;
+        }
+
+        if(curCooldown > 0f)
+        {
+            curCooldown -= Time.deltaTime;
+        }
+    }
+
+    void CombatButtonPress()
+    {
+        curComboWindow = comboWindowTime;
+        if (curCooldown <= 0)
+        {          
+            if (currCombatState == PlayerCombatState.punch1)
+            {
+                isFighting = true;
+                currLeftAnimTime = 0;
+                currCombatState++;
+                curCooldown = punchAnimationTime;
+            }
+            else if (currCombatState == PlayerCombatState.punch2)
+            {
+                currRightAnimTime = 0;
+                currCombatState++;
+                curCooldown = punchAnimationTime + kickWindupTime;
+            }
+            else if (currCombatState == PlayerCombatState.kick)
+            {
+                currKickAnimTime = 0;
+                currCombatState++;
+                curCooldown = kickAnimationTime + comboCooldown;
+            } else if(currCombatState == PlayerCombatState.recovery)
+            {
+                currCombatState = PlayerCombatState.punch1;
+                isFighting = false;
+                curCooldown = 0;
+                queuedHits = 0;
+            }
+        } else if (currCombatState != PlayerCombatState.recovery)
+        {
+            queuedHits++;
+        }
+
+    }
+
     // Update is called once per frame
     void Update () {
+        CombatStateUpdate();
         performKnocks();
         LeftHandPunch();
         RightHandPunch();
@@ -199,8 +263,11 @@ public class HandController : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.run)
         {
-            print("Circle Button: Punch!");
-            currLeftAnimTime = 0;
+            CombatButtonPress();
+        } else if(queuedHits > 0)
+        {
+            queuedHits--;
+            CombatButtonPress();
         }
         if (Input.GetKeyDown(KeyCode.Q))
         {
