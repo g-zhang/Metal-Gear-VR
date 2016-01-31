@@ -10,7 +10,7 @@ public class EnemyPunctuation : MonoBehaviour {
 	public bool billboard;
 
 	public enum puncType {alert = 0, question, redAlert, size};
-	public Sprite[] punc = new Sprite[(int)puncType.size];
+	public Sprite[] punc = new GameObject[(int)puncType.size];
 	puncType curPuncType;
 
 	// Use this for initialization
