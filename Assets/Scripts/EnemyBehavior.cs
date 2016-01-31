@@ -16,15 +16,19 @@ public class EnemyBehavior : MonoBehaviour {
     NavMeshAgent agn;
 
 	public float pauseTime = 3f;
-	public float timeTilMove;
+	float timeTilMove;
 	GameObject currentPoint;
 
 	Vector3 pointDirection;
 
 	public AudioSource alertSound;
 	bool alertSoundPlayed = false;
+	public float alertLookTime;
+	float timeTilTurn;
+	int numTurns; // how many turns performed
 
 	Vector3 soundLocation;
+
 
 	// Use this for initialization
 	void Start () {
@@ -33,6 +37,8 @@ public class EnemyBehavior : MonoBehaviour {
 		currentPoint = nextPoint;
 		soundLocation = Vector3.zero;
 		curEnemyState = enemyState.def;
+		numTurns = 0;
+		timeTilTurn = 0f;
 	}
 	
 	// Update is called once per frame
@@ -78,8 +84,13 @@ public class EnemyBehavior : MonoBehaviour {
 		else if (curEnemyState == enemyState.searching) {
 			// Stop moving
 			agn.Stop ();
-			print ("IM LOOKING FOR THE SOURCE OF SOUND");
-
+			if (timeTilTurn < alertLookTime)
+				timeTilTurn += Time.deltaTime;
+			else {
+				print ("Rotating...");
+				body.transform.Rotate (0f, 90f, 0f);
+				timeTilTurn = 0f;
+			}
 		}
 
 		// UNIVERSAL FOR ALL STATES
