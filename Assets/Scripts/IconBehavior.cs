@@ -4,7 +4,6 @@ using System.Collections;
 public class IconBehavior : MonoBehaviour {
 
 	public GameObject player;
-	public bool billboard;
 //	public int flickerPerSecond;
 //	public float offTime;
 
@@ -19,10 +18,6 @@ public class IconBehavior : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		gameObject.transform.position = new Vector3(player.transform.position.x, player.transform.position.y + 2, player.transform.position.z);
-
-		if (billboard) {
-			transform.LookAt (CameraController.S.cameras[(int)CameraType.overhead].transform.position);
-		}
 
 //		// If it's time to flicker
 //		if (timeTilFlicker <= 0) {
