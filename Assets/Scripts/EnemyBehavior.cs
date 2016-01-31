@@ -3,7 +3,7 @@ using System.Collections;
 
 public class EnemyBehavior : MonoBehaviour {
 	
-	public enum enemyState { def/*ault*/ = 0, alert, searching, knockout};
+	public enum enemyState { def/*ault*/ = 0, investigating, searching, knockout, stun};
 	enemyState curEnemyState;
 
 	public enum radar {sight = 0, alert};
@@ -19,7 +19,10 @@ public class EnemyBehavior : MonoBehaviour {
 	float timeTilMove;
 	GameObject currentPoint;
 
-	Vector3 pointDirection;
+	Vector3[] pointDirection;
+	int pointDirectionSize;
+	int directionsTurned;
+	public bool staysSamePoint;
 
 	public bool ____________________;
 	public AudioSource alertSound;
@@ -33,15 +36,21 @@ public class EnemyBehavior : MonoBehaviour {
 	public bool ______________________;
 	// Knock out variables
 	public AudioSource voiceSource;
-	public enum voice {enemyNoiseAlert = 0, enemyPunched, enemyFlip};
+	public enum voice {enemyNoiseAlert = 0, enemyPunched, enemyFlip, confused};
 	public AudioClip[] voiceClips;
 	public int curStamina;
 	int maxStamina;
 	public float downTime;
 	float timeTilUp;
 
+	public float stunTime;
+	float timeTilNoStun;
+
 	// Use this for initialization
 	void Start () {
+		directionsTurned = 0;
+		pointDirectionSize = 0;
+
         body = gameObject.GetComponent<Rigidbody>();
         agn = gameObject.GetComponent<NavMeshAgent>();
 		currentPoint = nextPoint;
@@ -58,23 +67,46 @@ public class EnemyBehavior : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		agn.enabled = true; 
-
+		print (this.name + " init directionsTurned: " + (directionsTurned));
+			
+		// Knockout State
 		if (curEnemyState == enemyState.knockout) {
-			if (timeTilUp < downTime)
+			if (timeTilUp < downTime) {
+				// Turn of sight cone
+				sightConeRenderer.enabled = false;
+				agn.Stop ();
+
 				timeTilUp += Time.deltaTime;
+			}
 			else {
 				timeTilUp = 0f;
-				curStamina = 7;
+				agn.Resume ();
+				if (curStamina <= 0)
+					curStamina = 7; // Restore stamina
+				sightConeRenderer.enabled = true;
 				curEnemyState = enemyState.searching;
 			}
-		}
+		} 
 
 		else if (curStamina <= 0) {
 			playVoice (voice.enemyFlip);
 			curEnemyState = enemyState.knockout;
 			print ("IM DOWN");
-			//transform.Rotate (transform.forward * 90f);
+		} 
+
+		// DamagedState
+		else if (curEnemyState == enemyState.stun) {
+			if (timeTilNoStun < stunTime) {
+				agn.Stop ();
+				timeTilNoStun += Time.deltaTime;
+			}
+			else {
+				agn.Resume();
+				timeTilNoStun = 0f;
+				curEnemyState = enemyState.def;
+			}
 		}
+
 		// Knockout takes priority lol sorry for the bad code
 		else {
 			// Default State
@@ -90,21 +122,32 @@ public class EnemyBehavior : MonoBehaviour {
 
 				// Count down until time to move
 				if (timeTilMove > 0) {
-					body.transform.rotation = Quaternion.LookRotation (Vector3.Slerp (body.transform.forward, pointDirection, rotationSpeed));
+					if (staysSamePoint)
+						body.transform.rotation = Quaternion.LookRotation (Vector3.Slerp (body.transform.forward, pointDirection[directionsTurned - 1], rotationSpeed));
+					else 
+						body.transform.rotation = Quaternion.LookRotation (Vector3.Slerp (body.transform.forward, pointDirection[directionsTurned], rotationSpeed));
 					timeTilMove -= Time.deltaTime;
 				} 
 			// Once timer runs down...
-			else {
-					Vector3 targetDir = nextPoint.transform.position - transform.position;
-					if (Vector3.Angle (body.transform.forward, targetDir) > 45f) {
-						body.transform.rotation = Quaternion.LookRotation (Vector3.Slerp (body.transform.forward, targetDir, rotationSpeed));
+				else {
+					// If it hasn't gone through all the turns
+					if (directionsTurned < (pointDirectionSize - 1) || (staysSamePoint && directionsTurned < pointDirectionSize)) {
+						timeTilMove = pauseTime;
+						directionsTurned += 1;
 					} else {
-						agn.destination = nextPoint.transform.position;
+						directionsTurned = 0;
+						Vector3 targetDir = nextPoint.transform.position - transform.position;
+						if (Vector3.Angle (body.transform.forward, targetDir) > 45f) {
+							body.transform.rotation = Quaternion.LookRotation (Vector3.Slerp (body.transform.forward, targetDir, rotationSpeed));
+						} else {
+							agn.destination = nextPoint.transform.position;
+						}
 					}
 				}
 			} 
+
 		// Alerted State
-		else if (curEnemyState == enemyState.alert) {
+		else if (curEnemyState == enemyState.investigating) {
 				// Change sightcone red
 				sightConeRenderer.sprite = radarSprites [(int)radar.alert];
 
@@ -114,12 +157,16 @@ public class EnemyBehavior : MonoBehaviour {
 					curEnemyState = enemyState.searching;
 				}
 			}
+
 		// Searching State
 		else if (curEnemyState == enemyState.searching) {
 				// Stop moving
 				agn.enabled = false;
 
-				if (numTurns <= 2) {
+				// Change sightcone red
+				sightConeRenderer.sprite = radarSprites [(int)radar.alert];
+
+				if (numTurns <= 3) {
 					if (timeTilTurn < alertLookTime)
 						timeTilTurn += Time.deltaTime;
 					else {
@@ -128,6 +175,11 @@ public class EnemyBehavior : MonoBehaviour {
 							turnDirection = body.transform.right;
 						if (numTurns == 1)
 							turnDirection = body.transform.forward * -1;
+						if (numTurns == 2) {
+							turnDirection = body.transform.right;
+							sightConeRenderer.sprite = radarSprites [(int)radar.sight];
+							playVoice (voice.confused);
+						}
 						numTurns++;
 						timeTilTurn = 0f;
 					}
@@ -140,46 +192,56 @@ public class EnemyBehavior : MonoBehaviour {
 			}
 			// UNIVERSAL FOR ALL STATES
 
-			// Enemy vision
-			// If player is within the 90 degree vision cone and is 4 away...
-			Vector3 toPlayer = MovementController.player.transform.position - gameObject.transform.position;
-			if (Vector3.Angle (toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4) {
-				// If player is not hidden behind something...
-				RaycastHit hit;
-				Debug.DrawRay (transform.position, toPlayer);
-				if (Physics.Raycast (transform.position, toPlayer, out hit)) {
-					if (hit.collider.name == "Snake") {
-						if (!alertSoundPlayed) {
-							print ("I SEE YOU!");
-							alertSound.Play ();
-							alertSoundPlayed = true;
-						}
-						agn.Stop ();
+			// If player enters sight cone, game over
+			EnemySight ();
+
+			// If player makes noise, investigate
+			EnemyHearing ();
+		}
+	}
+
+	void EnemySight() {
+		// If player is within the 90 degree vision cone and is 4 away...
+		Vector3 toPlayer = MovementController.player.transform.position - gameObject.transform.position;
+		if (Vector3.Angle (toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4) {
+			// If player is not hidden behind something...
+			RaycastHit hit;
+			Debug.DrawRay (transform.position, toPlayer);
+			if (Physics.Raycast (transform.position, toPlayer, out hit)) {
+				if (hit.collider.name == "Snake") {
+					if (!alertSoundPlayed) {
+						print ("I SEE YOU!");
+						alertSound.Play ();
+						alertSoundPlayed = true;
 					}
+					agn.Stop ();
 				}
-			} else {
-				agn.Resume ();
-				alertSoundPlayed = false;
 			}
+		} else {
+			agn.Resume ();
+			alertSoundPlayed = false;
+		}
+	}
 
-			// Enemy Hearing
-			// Check to see if player is knocking only if not searching
-			if (curEnemyState != enemyState.searching) {
-				if (HandController.S.isCurrentlyKnocking ()) {
-			
-					soundLocation = MovementController.player.transform.position;
+	void EnemyHearing() {
+		// Check to see if player is knocking only if not searching
+		if (curEnemyState != enemyState.searching) {
+			if (HandController.S.isCurrentlyKnocking ()) {
 
-					// Check distance between self and sound location
-					if (Vector3.Magnitude (soundLocation - body.transform.position) <= 5f) {
-						// If the player made a sound withing 5 meters of enemy
-						//	then make enemy alerted
-						Debug.DrawLine (body.transform.position, soundLocation, Color.green, 1f);
-						print ("What was that noise?");
-						agn.destination = soundLocation;
-						curEnemyState = enemyState.alert;
-					} else {
-						Debug.DrawLine (body.transform.position, soundLocation, Color.red, 1f);
-					}
+				soundLocation = MovementController.player.transform.position;
+
+				// Check distance between self and sound location
+				if (Vector3.Magnitude (soundLocation - body.transform.position) <= 5f) {
+					// If the player made a sound withing 5 meters of enemy
+					//	then make enemy alerted
+					Debug.DrawLine (body.transform.position, soundLocation, Color.green, 1f);
+					// Stop voice overlap
+					if (!voiceSource.isPlaying)
+						playVoice (voice.enemyNoiseAlert);
+					agn.destination = soundLocation;
+					curEnemyState = enemyState.investigating;
+				} else {
+					Debug.DrawLine (body.transform.position, soundLocation, Color.red, 1f);
 				}
 			}
 		}
@@ -190,9 +252,10 @@ public class EnemyBehavior : MonoBehaviour {
         nextPoint = next;
     }
 
-	public void SetDirection (Vector3 dir) 
+	public void SetDirection (Vector3[] dir) 
 	{
 		pointDirection = dir;
+		pointDirectionSize = dir.Length;
 	}
 
 	// KnockOut
@@ -205,11 +268,16 @@ public class EnemyBehavior : MonoBehaviour {
 			// If enemy is punched
 			if (other.tag == "Hand" || other.tag == "Leg") {
 				playVoice (voice.enemyPunched);
+				curEnemyState = enemyState.stun;
+				timeTilNoStun = 0f;
 			}
 			if (other.tag == "Hand")
 				curStamina -= 1;
-			if (other.tag == "Leg")
+			if (other.tag == "Leg") {
+				curEnemyState = enemyState.knockout;
+				playVoice (voice.enemyFlip);
 				curStamina -= 2;
+			}
 		}
 	}
 
