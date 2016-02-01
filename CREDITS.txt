@@ -1,0 +1,6 @@
+The Sounds Resource, Copyright 2000-2016, The VG Resource 
+Link: http://www.sounds-resource.com/pc_computer/mgs/sound/328/
+Sounds Used:
+- Knock sound
+- Alert sound
+- Punch/kick sound
