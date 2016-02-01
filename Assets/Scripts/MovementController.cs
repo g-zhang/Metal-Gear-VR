@@ -31,6 +31,7 @@ public class MovementController : MonoBehaviour {
     public float raycastOffsetBottom = .3f;
 
     public bool FPVModeCrawlControl = false;
+    public bool FPVModeControl = false;
 
     public float inFPVModeCrawlTransition = 0f;
     public float ToFPVModeTransitionTime = .5f;
@@ -39,9 +40,12 @@ public class MovementController : MonoBehaviour {
     Vector3 lastVel;
     Vector3 lastCrawlTurnVector;
     Vector3 lastForwardCrawlVector = Vector3.zero;
+    Vector3 lastFPVForward;
     float timeTillTurnUpdate = 1f / 60f; //turn controls in FPV crawl mode updates in 60 hz
     Vector3 defaultPlayerSize;
     Vector3 defaultBoxColliderSize;
+
+    Quaternion defaultFPVCameraAngle;
 
     int wallLayerMask = 1 << 10; //mask for wall raycasting
     int floorLayerMask = 1 << 12;
@@ -74,7 +78,8 @@ public class MovementController : MonoBehaviour {
         boxcollider = gameObject.GetComponent<BoxCollider>();
         defaultBoxColliderSize = boxcollider.size;
         defaultPlayerSize = body.transform.localScale;
-		player = this;
+        defaultFPVCameraAngle = CameraController.S.cameras[(int)CameraType.fpv].transform.localRotation;
+        player = this;
 	}
 
 	// Update is called once per frame
@@ -95,9 +100,20 @@ public class MovementController : MonoBehaviour {
                 print("Invincibility Mode DE-ACTIVATED!");
             }
         }
-        if (Input.GetKey(KeyCode.W))
+
+        if(currState == movementState.run || (inCrouchMode && currState == movementState.crawl) || currState == movementState.sneak)
         {
-            print("Triangle Button: FPV Cam");
+            if (Input.GetKeyDown(KeyCode.W))
+            {
+                print("Triangle Button: FPV Cam"); 
+                FPVModeControl = true;
+                CameraController.S.SwitchCameraTo(CameraType.fpv);
+            }
+            if (Input.GetKeyUp(KeyCode.W))
+            {
+                FPVModeControl = false;
+                CameraController.S.SwitchCameraTo(CameraType.overhead);
+            }
         }
 
         Vector3 vel = Vector3.zero;
@@ -114,8 +130,60 @@ public class MovementController : MonoBehaviour {
 			vel.x += 1;
 		}
 
-		//perform wall stick sneak movements
-		if (currState == movementState.sneak) {
+        if(HandController.S.isFighting || HandController.S.isFighting || FPVModeControl)
+        {
+            vel = Vector3.zero;
+        }
+
+        // begin of FPV mode control
+        GameObject fpvcamera = CameraController.S.cameras[(int)CameraType.fpv];
+        if (FPVModeControl)
+        {
+            //controls for FPV mode
+            if(Input.GetKey(KeyCode.UpArrow))
+            {
+                Quaternion rot = Quaternion.Euler(-45f, 0f, 0f);
+                fpvcamera.transform.localRotation = Quaternion.Slerp(fpvcamera.transform.localRotation, rot, .05f);
+            }
+            if (Input.GetKey(KeyCode.DownArrow))
+            {
+                Quaternion rot = Quaternion.Euler(45f, 0f, 0f);
+                fpvcamera.transform.localRotation = Quaternion.Slerp(fpvcamera.transform.localRotation, rot, .05f);
+            }
+
+            if (Input.GetKey(KeyCode.LeftArrow))
+            {
+                lastFPVForward = (new Vector3(0f, -FPVRotationSpeedDeg, 0f));
+            }
+            else if (Input.GetKey(KeyCode.RightArrow))
+            {
+                lastFPVForward = (new Vector3(0f, FPVRotationSpeedDeg, 0f));
+            }
+            else
+            {
+                if (timeTillTurnUpdate <= 0)
+                {
+                    lastFPVForward *= FPVRotationDecel;
+                }
+            }
+
+            if (timeTillTurnUpdate > 0)
+            {
+                timeTillTurnUpdate -= Time.deltaTime;
+            }
+            else
+            {
+                timeTillTurnUpdate = 1f / 60f;
+                body.transform.Rotate(lastFPVForward);
+            }
+        }
+        if (fpvcamera.transform.localRotation != defaultFPVCameraAngle && !Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.UpArrow))
+        {
+            fpvcamera.transform.localRotation = Quaternion.Slerp(fpvcamera.transform.localRotation, defaultFPVCameraAngle, .05f);
+        }
+
+        //perform wall stick sneak movements
+        if (currState == movementState.sneak) {
 			if (Vector3.Dot (vel, gameObject.transform.forward) > 0 && Vector3.Angle (vel, gameObject.transform.forward) < 90) {
 				if (inCrouchMode) {
 					currState = movementState.crawl;
@@ -237,7 +305,7 @@ public class MovementController : MonoBehaviour {
         {
             inFPVModeCrawlTransition -= Time.deltaTime;
             body.velocity = lastForwardCrawlVector;
-        } else if(HandController.S.isFighting)
+        } else if(HandController.S.isFighting || HandController.S.isGrabbing)
         {
             //don't set velocity here
         } else if (currState == movementState.run) {
@@ -282,13 +350,11 @@ public class MovementController : MonoBehaviour {
                 timeTillTurnUpdate = 1f / 60f;
                 body.transform.Rotate(lastCrawlTurnVector);
             }
-                
-
-        }
+        }// end of FPV mode crawl control
 
         //ROTATIONS, face character towards the vector of movement:
         //set our foward direction if in run state (run rotation)
-        if (currState == movementState.run)
+        if (currState == movementState.run && !FPVModeControl)
         {
             if (Vector3.Angle(body.transform.forward, lastVel.normalized) > 45f)
             {
@@ -300,7 +366,7 @@ public class MovementController : MonoBehaviour {
             //body.transform.rotation = Quaternion.LookRotation(lastVel.normalized);	
         }
         else //set look direction in crawl mode, unless snake is backing up, or in FPV Crawl mode
-        if (currState == movementState.crawl && !FPVModeCrawlControl && inFPVModeCrawlTransition <= 0)
+        if (currState == movementState.crawl && !FPVModeCrawlControl && !FPVModeControl && inFPVModeCrawlTransition <= 0)
         {
             if (vel != Vector3.zero)
             {

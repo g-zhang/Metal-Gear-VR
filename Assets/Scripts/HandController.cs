@@ -15,6 +15,7 @@ public class HandController : MonoBehaviour {
     public float comboWindowTime = .2f; //window where another button press will continue the combo
     public float comboCooldown = .5f; //seconds of cooldown after executing full combo
     public float kickWindupTime = .05f; // seconds it takes for a kick to prepare
+    public float grabCooldown = .1f;
 
     public float punchDistance = 1f;
     public float punchSwingOffset = .25f; //distance snakes punches towards center
@@ -242,6 +243,11 @@ public class HandController : MonoBehaviour {
             isGrabbing = false;
         }
 
+        if(isGrabbing)
+        {
+            body.velocity = Vector3.zero;
+        }
+
         if(isFighting)
         {
             if(isGrabbing)
@@ -305,7 +311,7 @@ public class HandController : MonoBehaviour {
         {
             currLeftAnimTime = 0;
             currRightAnimTime = 0;
-            curCooldown = punchAnimationTime;
+            curCooldown = punchAnimationTime + grabCooldown;
             isGrabbing = true;
         }
     }
@@ -319,22 +325,28 @@ public class HandController : MonoBehaviour {
         RightKick();
 
         //input
-        if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.sneak)
+        if (!MovementController.player.FPVModeControl)
         {
-            currAnimationTime = knockAnimationTime;
+            //knocking
+            if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.sneak)
+            {
+                currAnimationTime = knockAnimationTime;
+            }
+            //combat
+            if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.run)
+            {
+                CombatButtonPress();
+            }
+            else if (queuedHits > 0)
+            {
+                queuedHits--;
+                CombatButtonPress();
+            }
+            //grabbing
+            if (Input.GetKeyDown(KeyCode.Q) && MovementController.player.currState == MovementController.movementState.run)
+            {
+                GrabButtonPress();
+            }
         }
-        if (Input.GetKeyDown(KeyCode.S) && MovementController.player.currState == MovementController.movementState.run)
-        {
-            CombatButtonPress();
-        } else if(queuedHits > 0)
-        {
-            queuedHits--;
-            CombatButtonPress();
-        }
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            GrabButtonPress();
-        }
-
     }
 }
