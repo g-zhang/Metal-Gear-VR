@@ -36,7 +36,7 @@ public class EnemyBehavior : MonoBehaviour {
 	public bool ______________________;
 	// Knock out variables
 	public AudioSource voiceSource;
-	public enum voice {enemyNoiseAlert = 0, enemyPunched, enemyFlip, confused};
+	public enum voice {enemyNoiseAlert = 0, enemyPunched, enemyFlip, confused, foundSnake};
 	public AudioClip[] voiceClips;
 	public int curStamina;
 	int maxStamina;
@@ -72,6 +72,8 @@ public class EnemyBehavior : MonoBehaviour {
 		// Knockout State
 		if (curEnemyState == enemyState.knockout) {
 			if (timeTilUp < downTime) {
+				//this.transform.localScale = new Vector3 (5f, 5f, 5f);
+
 				// Turn of sight cone
 				sightConeRenderer.enabled = false;
 				agn.Stop ();
@@ -103,7 +105,7 @@ public class EnemyBehavior : MonoBehaviour {
 			else {
 				agn.Resume();
 				timeTilNoStun = 0f;
-				curEnemyState = enemyState.def;
+				curEnemyState = enemyState.searching;
 			}
 		}
 
@@ -171,14 +173,15 @@ public class EnemyBehavior : MonoBehaviour {
 						timeTilTurn += Time.deltaTime;
 					else {
 						print ("Rotating...");
-						if (numTurns == 0)
+						if (numTurns == 0) {
 							turnDirection = body.transform.right;
+							playVoice (voice.confused);
+						}
 						if (numTurns == 1)
 							turnDirection = body.transform.forward * -1;
 						if (numTurns == 2) {
 							turnDirection = body.transform.right;
 							sightConeRenderer.sprite = radarSprites [(int)radar.sight];
-							playVoice (voice.confused);
 						}
 						numTurns++;
 						timeTilTurn = 0f;
@@ -192,8 +195,11 @@ public class EnemyBehavior : MonoBehaviour {
 			}
 			// UNIVERSAL FOR ALL STATES
 
-			// If player enters sight cone, game over
-			EnemySight ();
+			// Make player invincible
+			if (!MovementController.player.bigBossMode) {
+				// If player enters sight cone, game over
+				EnemySight ();
+			}
 
 			// If player makes noise, investigate
 			EnemyHearing ();
@@ -209,15 +215,10 @@ public class EnemyBehavior : MonoBehaviour {
 			Debug.DrawRay (transform.position, toPlayer);
 			if (Physics.Raycast (transform.position, toPlayer, out hit)) {
 				if (hit.collider.name == "Snake") {
-					if (!alertSoundPlayed) {
-						print ("I SEE YOU!");
-						alertSound.Play ();
-						alertSoundPlayed = true;
-					}
-					agn.Stop ();
+					activateGameOver ();
 				}
 			}
-		} else {
+		} else { 
 			agn.Resume ();
 			alertSoundPlayed = false;
 		}
@@ -261,22 +262,34 @@ public class EnemyBehavior : MonoBehaviour {
 	// KnockOut
 	void OnTriggerEnter(Collider other)
 	{
-		print("Triggered: " + other.gameObject.tag);
+		print("Triggered: " + other.gameObject.name);
 
-		if (HandController.S.isFighting && curEnemyState != enemyState.knockout) {
+		if (curEnemyState != enemyState.knockout) {
 
-			// If enemy is punched
-			if (other.tag == "Hand" || other.tag == "Leg") {
-				playVoice (voice.enemyPunched);
-				curEnemyState = enemyState.stun;
-				timeTilNoStun = 0f;
+			// If enemy is grabbed
+			if (HandController.S.isGrabbing) {
+				if (other.tag == "Hand") {
+					curStamina -= 5;
+					curEnemyState = enemyState.knockout;
+				}
 			}
-			if (other.tag == "Hand")
-				curStamina -= 1;
-			if (other.tag == "Leg") {
-				curEnemyState = enemyState.knockout;
-				playVoice (voice.enemyFlip);
-				curStamina -= 2;
+
+			// If player is trying to fight enemy
+			if (HandController.S.isFighting) {
+
+				// If enemy is punched
+				if (other.tag == "Hand" || other.tag == "Leg") {
+					playVoice (voice.enemyPunched);
+					curEnemyState = enemyState.stun;
+					timeTilNoStun = 0f;
+				}
+				if (other.tag == "Hand")
+					curStamina -= 1;
+				if (other.tag == "Leg") {
+					curEnemyState = enemyState.knockout;
+					playVoice (voice.enemyFlip);
+					curStamina -= 2;
+				}
 			}
 		}
 	}
@@ -285,5 +298,16 @@ public class EnemyBehavior : MonoBehaviour {
 		voiceSource.clip = voiceClips [(int)whichVoice];
 		voiceSource.Stop ();
 		voiceSource.Play ();
+	}
+
+	void activateGameOver() {
+		if (!alertSoundPlayed) {
+			print ("I SEE YOU!");
+			alertSound.Play ();
+			playVoice (voice.foundSnake);
+			alertSoundPlayed = true;
+
+		}
+		agn.Stop ();
 	}
 }

@@ -34,6 +34,8 @@ public class LevelTargetMarker : MonoBehaviour
     {
         print("Triggered: " + other.gameObject.name);
         //level completion code when collider is the player
+		if (other.gameObject.name == "Snake")
+			Application.LoadLevel (Application.loadedLevel + 1);
     }
 
 }
