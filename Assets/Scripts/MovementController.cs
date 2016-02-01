@@ -48,7 +48,7 @@ public class MovementController : MonoBehaviour {
     Quaternion defaultFPVCameraAngle;
 
     int wallLayerMask = 1 << 10; //mask for wall raycasting
-    int floorLayerMask = 1 << 12;
+    //int floorLayerMask = 1 << 12;
 
     //performs a double raycast above and below the start point by offset amount
     //returns true if either raycast returns true
@@ -269,7 +269,7 @@ public class MovementController : MonoBehaviour {
             body.transform.localScale = defaultPlayerSize;
             //check for nearby walls so we don't clip inside them
             Ray frontray = new Ray(body.transform.position, body.transform.forward);
-            Ray buttray = new Ray(body.transform.position, -body.transform.forward);
+            //Ray buttray = new Ray(body.transform.position, -body.transform.forward);
             if (Physics.Raycast(frontray, body.transform.lossyScale.y / 2f, wallLayerMask))
             {
                 Vector3 safePos = gameObject.transform.position;

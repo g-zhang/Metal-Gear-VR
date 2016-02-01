@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class LevelTargetMarker : MonoBehaviour
 {
@@ -28,6 +29,8 @@ public class LevelTargetMarker : MonoBehaviour
 
         //rotate marker
         body.transform.Rotate(0, rotateSpeed * Time.deltaTime, 0);
+
+        quickLevelLoad();
     }
 
     void OnTriggerEnter(Collider other)
@@ -35,7 +38,32 @@ public class LevelTargetMarker : MonoBehaviour
         print("Triggered: " + other.gameObject.name);
         //level completion code when collider is the player
 		if (other.gameObject.name == "Snake")
-			Application.LoadLevel (Application.loadedLevel + 1);
+            //SceneManager.LoadScene(Application.loadedLevel + 1);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
+    void quickLevelLoad()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            SceneManager.LoadScene("Level_01");
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            SceneManager.LoadScene("Level_02");
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            SceneManager.LoadScene("Level_03");
+        }
+
+        if (Input.GetKey(KeyCode.Alpha4))
+        {
+            SceneManager.LoadScene("Level_C1");
+        }
+        if (Input.GetKey(KeyCode.Alpha5))
+        {
+           // SceneManager.LoadScene("Level_C2");
+        }
+    }
 }
