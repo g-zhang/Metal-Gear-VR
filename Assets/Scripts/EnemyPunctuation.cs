@@ -5,8 +5,6 @@ public enum puncType {alert = 0, question, redAlert, starKnockout, size};
 
 public class EnemyPunctuation : MonoBehaviour {
 
-	public static EnemyPunctuation S;
-
 	bool isOn;
 	public float appearTime;
 	float timeTilOff;
@@ -18,8 +16,6 @@ public class EnemyPunctuation : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		S = this;
-
 		// Default sprite is off
 		this.GetComponent<SpriteRenderer> ().enabled = false;
 		isOn = false;
