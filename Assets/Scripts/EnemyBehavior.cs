@@ -7,6 +7,7 @@ public class EnemyBehavior : MonoBehaviour {
 	enemyState curEnemyState;
 
 	public enum radar {sight = 0, alert};
+	public SpriteRenderer radarIcon;
 	public SpriteRenderer sightConeRenderer;
 	public Sprite[] radarSprites;
 
@@ -67,12 +68,14 @@ public class EnemyBehavior : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		agn.enabled = true; 
-		print (this.name + " init directionsTurned: " + (directionsTurned));
+		// print (this.name + " init directionsTurned: " + (directionsTurned));
 			
 		// Knockout State
 		if (curEnemyState == enemyState.knockout) {
 			if (timeTilUp < downTime) {
-				//this.transform.localScale = new Vector3 (5f, 5f, 5f);
+				// Make them look like they fell over
+				this.transform.localScale = new Vector3 (0.75f, 0.375f, 1.5f);
+				radarIcon.transform.localScale = new Vector3 (0.067f, 0.1333f, 0.6667f);
 
 				// Turn of sight cone
 				sightConeRenderer.enabled = false;
@@ -81,6 +84,10 @@ public class EnemyBehavior : MonoBehaviour {
 				timeTilUp += Time.deltaTime;
 			}
 			else {
+				// Stand back up, loser
+				this.transform.localScale = new Vector3 (0.75f, 1.5f, 0.375f);
+				radarIcon.transform.localScale = new Vector3 (0.2667f, 0.1333f, 0.6667f);
+
 				timeTilUp = 0f;
 				agn.Resume ();
 				if (curStamina <= 0)
@@ -212,7 +219,13 @@ public class EnemyBehavior : MonoBehaviour {
 		if (Vector3.Angle (toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4) {
 			// If player is not hidden behind something...
 			RaycastHit hit;
-			Debug.DrawRay (transform.position, toPlayer);
+
+			// Have the ray start from the enemy's "head"
+			Vector3 enemyHeadLocation = transform.position;
+			enemyHeadLocation.y += 0.55f;
+
+			Debug.DrawRay (enemyHeadLocation, toPlayer);
+
 			if (Physics.Raycast (transform.position, toPlayer, out hit)) {
 				if (hit.collider.name == "Snake") {
 					activateGameOver ();
@@ -266,10 +279,16 @@ public class EnemyBehavior : MonoBehaviour {
 
 		if (curEnemyState != enemyState.knockout) {
 
+			// If player walks into enemy
+			if (other.name == "Snake") {
+				curEnemyState = enemyState.searching;
+			}
+
 			// If enemy is grabbed
 			if (HandController.S.isGrabbing) {
 				if (other.tag == "Hand") {
 					curStamina -= 5;
+					playVoice (voice.enemyFlip);
 					curEnemyState = enemyState.knockout;
 				}
 			}
@@ -302,11 +321,10 @@ public class EnemyBehavior : MonoBehaviour {
 
 	void activateGameOver() {
 		if (!alertSoundPlayed) {
-			print ("I SEE YOU!");
+			// print ("I SEE YOU!");
 			alertSound.Play ();
 			playVoice (voice.foundSnake);
 			alertSoundPlayed = true;
-
 		}
 		agn.Stop ();
 	}
