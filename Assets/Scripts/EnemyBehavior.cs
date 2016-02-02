@@ -226,11 +226,11 @@ public class EnemyBehavior : MonoBehaviour {
 
 			// Have the ray start from the enemy's "head"
 			Vector3 enemyHeadLocation = transform.position;
-			enemyHeadLocation.y += 0.55f;
+			enemyHeadLocation.y += 0.65f;
 
 			Debug.DrawRay (enemyHeadLocation, toPlayer);
 
-			if (Physics.Raycast (transform.position, toPlayer, out hit)) {
+			if (Physics.Raycast (enemyHeadLocation, toPlayer, out hit)) {
 				if (hit.collider.name == "Snake") {
 					activateGameOver ();
 				}
