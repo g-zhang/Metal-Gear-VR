@@ -64,7 +64,7 @@ public class HandController : MonoBehaviour {
     public bool isFighting = false;
     public bool isGrabbing = false;
     public PlayerCombatState currCombatState = PlayerCombatState.punch1;
-    float curCooldown = 0f;
+    public float curCooldown = 0f;
     float curComboWindow = 0f;
     public int queuedHits = 0;
 

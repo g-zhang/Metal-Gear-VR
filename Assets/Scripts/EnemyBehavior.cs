@@ -300,6 +300,7 @@ public class EnemyBehavior : MonoBehaviour {
 					curStamina -= 5;
 					playVoice (voice.enemyFlip);
 					curEnemyState = enemyState.knockout;
+                    HandController.S.curCooldown += .25f;
 				}
 			}
 
