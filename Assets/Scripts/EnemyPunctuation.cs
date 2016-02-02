@@ -35,17 +35,17 @@ public class EnemyPunctuation : MonoBehaviour {
 		}
 
 		if (isOn && timeTilOff > 0f) {
-			this.GetComponent<SpriteRenderer> ().enabled = true;
+			GetComponent<SpriteRenderer> ().enabled = true;
 			timeTilOff -= Time.deltaTime;
 		} else {
-			this.GetComponent<SpriteRenderer> ().enabled = false;
+			GetComponent<SpriteRenderer> ().enabled = false;
 			timeTilOff = appearTime;
 			isOn = false;
 		}
 	}
 
 	public void displayIcon(puncType icon) {
-		this.GetComponent<SpriteRenderer> ().sprite = punc [(int)icon];
+		GetComponent<SpriteRenderer> ().sprite = punc [(int)icon];
 		isOn = true;
 	}
 }
