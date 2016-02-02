@@ -8,14 +8,21 @@ public class LevelTargetMarker : MonoBehaviour
     Rigidbody body;
     float initialY;
 
+	Scene currentScene;
+
     public float floatSpeed = 0.5f;
     public float floatHeight = 1f;
     public float rotateSpeed = 5f;
 
+	void Awake() {
+		currentScene = SceneManager.GetActiveScene ();
+
+		S = this;
+	}
+
     // Use this for initialization
     void Start()
     {
-		S = this;
         body = gameObject.GetComponent<Rigidbody>();
         initialY = body.transform.position.y;
     }
@@ -38,19 +45,23 @@ public class LevelTargetMarker : MonoBehaviour
     {
         print("Triggered: " + other.gameObject.name);
         //level completion code when collider is the player
-		if (other.gameObject.name == "Snake")
-            //SceneManager.LoadScene(Application.loadedLevel + 1);
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+		if (other.gameObject.name == "Snake") {
+			//SceneManager.LoadScene(Application.loadedLevel + 1);
+			SceneManager.LoadScene (currentScene.buildIndex + 1);
+		}
     }
 		
 	public void activateGameOver() {
 		print ("Game over man ):");
+		SavedVariables.S.lastSceneOpen = currentScene.name;
+		SceneManager.LoadScene ("GameOver");
 	}
 
     void quickLevelLoad()
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
+			DestroyObject (SavedVariables.S.gameObject);
             SceneManager.LoadScene("Level_01");
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
