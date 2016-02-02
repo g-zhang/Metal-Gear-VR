@@ -14,12 +14,15 @@ public class LevelTargetMarker : MonoBehaviour
     public float floatHeight = 1f;
     public float rotateSpeed = 5f;
 
-    // Use this for initialization
-    void Start()
-    {
+	void Awake() {
 		currentScene = SceneManager.GetActiveScene ();
 
 		S = this;
+	}
+
+    // Use this for initialization
+    void Start()
+    {
         body = gameObject.GetComponent<Rigidbody>();
         initialY = body.transform.position.y;
     }
