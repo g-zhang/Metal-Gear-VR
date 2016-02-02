@@ -122,6 +122,10 @@ public class EnemyBehavior : MonoBehaviour {
 			if (curEnemyState == enemyState.def) {
 				sightConeRenderer.sprite = radarSprites [(int)radar.sight];
 
+				// If player "touches" enemy, make enemy start searching
+				if (Vector3.Magnitude (transform.position - MovementController.player.transform.position) <= 0.5f)
+					curEnemyState = enemyState.searching;
+
 				// Once the point changes...
 				if (currentPoint != nextPoint) {
 					// Start countdown timer
