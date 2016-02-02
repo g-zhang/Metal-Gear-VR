@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 
 public class LevelTargetMarker : MonoBehaviour
 {
-
+	public static LevelTargetMarker S;
     Rigidbody body;
     float initialY;
 
@@ -15,6 +15,7 @@ public class LevelTargetMarker : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+		S = this;
         body = gameObject.GetComponent<Rigidbody>();
         initialY = body.transform.position.y;
     }
@@ -41,6 +42,10 @@ public class LevelTargetMarker : MonoBehaviour
             //SceneManager.LoadScene(Application.loadedLevel + 1);
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
+		
+	public void activateGameOver() {
+		print ("Game over man ):");
+	}
 
     void quickLevelLoad()
     {

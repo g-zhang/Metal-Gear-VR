@@ -1,6 +1,24 @@
 The Sounds Resource, Copyright 2000-2016, The VG Resource 
 Link: http://www.sounds-resource.com/pc_computer/mgs/sound/328/
+Sounds originally from Metal Gear Solid 1
 Sounds Used:
-- Knock sound
-- Alert sound
-- Punch/kick sound
+- SE_AlertSound
+- SE_EnemyDamaged
+- SE_Kick
+- SE_KickMiss
+- SE_Knock
+- SE_KO
+- SE_MenuSelect
+- SE_Punch
+- SE_PunchMiss
+- V_Confused
+- V_EnemyFlip
+- V_EnemyNoiseAlert
+- V_EnemyPunched
+- V_FoundSnake
+
+Metal Gear Solid - VR Missions Soundtrack
+Music Used:
+- M_Briefing
+- M_GameOver
+- M_VRSong

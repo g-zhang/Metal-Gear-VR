@@ -329,6 +329,7 @@ public class EnemyBehavior : MonoBehaviour {
 			alertSound.Play ();
 			playVoice (voice.foundSnake);
 			alertSoundPlayed = true;
+			LevelTargetMarker.S.activateGameOver ();
 		}
 		agn.Stop ();
 	}
