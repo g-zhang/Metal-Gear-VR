@@ -220,7 +220,7 @@ public class EnemyBehavior : MonoBehaviour {
 	void EnemySight() {
 		// If player is within the 90 degree vision cone and is 4 away...
 		Vector3 toPlayer = MovementController.player.transform.position - gameObject.transform.position;
-		if (Vector3.Angle (toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4) {
+		if (Vector3.Angle (toPlayer, gameObject.transform.forward) < 45 && toPlayer.magnitude < 4 && !MovementController.player.FPVModeCrawlControl) {
 			// If player is not hidden behind something...
 			RaycastHit hit;
 
