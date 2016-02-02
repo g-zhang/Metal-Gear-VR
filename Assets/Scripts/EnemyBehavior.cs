@@ -69,13 +69,16 @@ public class EnemyBehavior : MonoBehaviour {
 	void Update () {
 		agn.enabled = true; 
 		// print (this.name + " init directionsTurned: " + (directionsTurned));
-			
+
 		// Knockout State
 		if (curEnemyState == enemyState.knockout) {
 			if (timeTilUp < downTime) {
 				// Make them look like they fell over
 				this.transform.localScale = new Vector3 (0.75f, 0.375f, 1.5f);
 				radarIcon.transform.localScale = new Vector3 (0.067f, 0.1333f, 0.6667f);
+
+				if (curStamina <= 0)
+					EnemyPunctuation.S.displayIcon (puncType.starKnockout);
 
 				// Turn of sight cone
 				sightConeRenderer.enabled = false;
@@ -96,10 +99,10 @@ public class EnemyBehavior : MonoBehaviour {
 				curEnemyState = enemyState.searching;
 			}
 		} 
-
 		else if (curStamina <= 0) {
 			playVoice (voice.enemyFlip);
 			curEnemyState = enemyState.knockout;
+			EnemyPunctuation.S.displayIcon (puncType.starKnockout);
 			print ("IM DOWN");
 		} 
 
@@ -187,6 +190,7 @@ public class EnemyBehavior : MonoBehaviour {
 						if (numTurns == 0) {
 							turnDirection = body.transform.right;
 							playVoice (voice.confused);
+							EnemyPunctuation.S.displayIcon (puncType.question);
 						}
 						if (numTurns == 1)
 							turnDirection = body.transform.forward * -1;
@@ -256,6 +260,7 @@ public class EnemyBehavior : MonoBehaviour {
 					// Stop voice overlap
 					if (!voiceSource.isPlaying)
 						playVoice (voice.enemyNoiseAlert);
+					EnemyPunctuation.S.displayIcon (puncType.alert);
 					agn.destination = soundLocation;
 					curEnemyState = enemyState.investigating;
 				} else {
@@ -279,7 +284,7 @@ public class EnemyBehavior : MonoBehaviour {
 	// KnockOut
 	void OnTriggerEnter(Collider other)
 	{
-		print("Triggered: " + other.gameObject.name);
+		// print("Triggered: " + other.gameObject.name);
 
 		if (curEnemyState != enemyState.knockout) {
 
@@ -326,6 +331,7 @@ public class EnemyBehavior : MonoBehaviour {
 	void activateGameOver() {
 		if (!alertSoundPlayed) {
 			// print ("I SEE YOU!");
+			EnemyPunctuation.S.displayIcon(puncType.redAlert);
 			alertSound.Play ();
 			playVoice (voice.foundSnake);
 			alertSoundPlayed = true;

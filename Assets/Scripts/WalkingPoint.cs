@@ -19,7 +19,7 @@ public class WalkingPoint : MonoBehaviour {
     {
         if(coll.gameObject.tag == "Enemy")
 		{
-			print (this.name);
+			//print (this.name);
 			coll.gameObject.GetComponent<EnemyBehavior> ().SetNext (nextPoint);
 			coll.gameObject.GetComponent<EnemyBehavior> ().SetDirection (direction);
         }

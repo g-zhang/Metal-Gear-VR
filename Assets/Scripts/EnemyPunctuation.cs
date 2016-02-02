@@ -1,9 +1,11 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public enum puncType {alert = 0, question, redAlert, size};
+public enum puncType {alert = 0, question, redAlert, starKnockout, size};
 
 public class EnemyPunctuation : MonoBehaviour {
+
+	public static EnemyPunctuation S;
 
 	bool isOn;
 	public float appearTime;
@@ -11,11 +13,13 @@ public class EnemyPunctuation : MonoBehaviour {
 
 	public bool billboard;
 
-	public Sprite[] punc = new Sprite[(int)puncType.size];
+	public Sprite[] punc = new Sprite[4];
 	puncType curPuncType;
 
 	// Use this for initialization
 	void Start () {
+		S = this;
+
 		// Default sprite is off
 		this.GetComponent<SpriteRenderer> ().enabled = false;
 		isOn = false;
@@ -35,6 +39,7 @@ public class EnemyPunctuation : MonoBehaviour {
 			timeTilOff -= Time.deltaTime;
 		} else {
 			this.GetComponent<SpriteRenderer> ().enabled = false;
+			timeTilOff = appearTime;
 			isOn = false;
 		}
 	}
