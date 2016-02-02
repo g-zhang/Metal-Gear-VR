@@ -13,6 +13,8 @@ public class menuController : MonoBehaviour {
 	void Update () {
 		if (Input.GetKeyDown(KeyCode.S))
 		{
+			if (SavedVariables.S.lastSceneOpen == "Level_01")
+				DestroyObject (SavedVariables.S.gameObject);
 			SceneManager.LoadScene(SavedVariables.S.lastSceneOpen);
 		}
 	}

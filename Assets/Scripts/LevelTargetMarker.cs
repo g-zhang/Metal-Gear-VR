@@ -61,6 +61,7 @@ public class LevelTargetMarker : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
+			DestroyObject (SavedVariables.S.gameObject);
             SceneManager.LoadScene("Level_01");
         }
         if (Input.GetKeyDown(KeyCode.Alpha2))
