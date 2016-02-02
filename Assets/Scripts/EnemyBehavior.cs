@@ -9,6 +9,7 @@ public class EnemyBehavior : MonoBehaviour {
 	public enum radar {sight = 0, alert};
 	public SpriteRenderer radarIcon;
 	public SpriteRenderer sightConeRenderer;
+	public SpriteRenderer punctuation;
 	public Sprite[] radarSprites;
 
     public GameObject nextPoint;
@@ -78,7 +79,7 @@ public class EnemyBehavior : MonoBehaviour {
 				radarIcon.transform.localScale = new Vector3 (0.067f, 0.1333f, 0.6667f);
 
 				if (curStamina <= 0)
-					EnemyPunctuation.S.displayIcon (puncType.starKnockout);
+					punctuation.GetComponent<EnemyPunctuation> ().displayIcon (puncType.starKnockout);
 
 				// Turn of sight cone
 				sightConeRenderer.enabled = false;
@@ -102,7 +103,7 @@ public class EnemyBehavior : MonoBehaviour {
 		else if (curStamina <= 0) {
 			playVoice (voice.enemyFlip);
 			curEnemyState = enemyState.knockout;
-			EnemyPunctuation.S.displayIcon (puncType.starKnockout);
+			punctuation.GetComponent<EnemyPunctuation> ().displayIcon (puncType.starKnockout);
 			print ("IM DOWN");
 		} 
 
@@ -190,7 +191,7 @@ public class EnemyBehavior : MonoBehaviour {
 						if (numTurns == 0) {
 							turnDirection = body.transform.right;
 							playVoice (voice.confused);
-							EnemyPunctuation.S.displayIcon (puncType.question);
+							punctuation.GetComponent<EnemyPunctuation>().displayIcon(puncType.question);
 						}
 						if (numTurns == 1)
 							turnDirection = body.transform.forward * -1;
@@ -260,7 +261,7 @@ public class EnemyBehavior : MonoBehaviour {
 					// Stop voice overlap
 					if (!voiceSource.isPlaying)
 						playVoice (voice.enemyNoiseAlert);
-					EnemyPunctuation.S.displayIcon (puncType.alert);
+					punctuation.GetComponent<EnemyPunctuation> ().displayIcon (puncType.alert);
 					agn.destination = soundLocation;
 					curEnemyState = enemyState.investigating;
 				} else {
@@ -331,7 +332,7 @@ public class EnemyBehavior : MonoBehaviour {
 	void activateGameOver() {
 		if (!alertSoundPlayed) {
 			// print ("I SEE YOU!");
-			EnemyPunctuation.S.displayIcon(puncType.redAlert);
+			punctuation.GetComponent<EnemyPunctuation> ().displayIcon (puncType.redAlert);
 			alertSound.Play ();
 			playVoice (voice.foundSnake);
 			alertSoundPlayed = true;
