@@ -63,7 +63,7 @@ public class LevelTargetMarker : MonoBehaviour
         }
         if (Input.GetKey(KeyCode.Alpha5))
         {
-           // SceneManager.LoadScene("Level_C2");
+            SceneManager.LoadScene("Level_C2");
         }
     }
 }
