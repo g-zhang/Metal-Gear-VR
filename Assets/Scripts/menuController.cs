@@ -4,6 +4,8 @@ using UnityEngine.SceneManagement;
 
 public class menuController : MonoBehaviour {
 
+	public bool isSuccess;
+
 	// Use this for initialization
 	void Start () {
 	
@@ -13,9 +15,14 @@ public class menuController : MonoBehaviour {
 	void Update () {
 		if (Input.GetKeyDown(KeyCode.S))
 		{
-			if (SavedVariables.S.lastSceneOpen == "Level_01")
+			if (isSuccess) {
 				DestroyObject (SavedVariables.S.gameObject);
-			SceneManager.LoadScene(SavedVariables.S.lastSceneOpen);
+				SceneManager.LoadScene ("Level_01");
+			} else {
+				if (SavedVariables.S.lastSceneOpen == "Level_01")
+					DestroyObject (SavedVariables.S.gameObject);
+				SceneManager.LoadScene (SavedVariables.S.lastSceneOpen);
+			}
 		}
 	}
 }
