@@ -19,6 +19,16 @@ Sounds Used:
 
 Metal Gear Solid - VR Missions Soundtrack
 Music Used:
-- M_Briefing
 - M_GameOver
 - M_VRSong
+- M_LevelComplete
+
+Metal Gear MSX Soundtrack
+Music Used:
+- M_ThemeOfTara
+
+Metal Gear Solid 1
+Sprites Used:
+- GameOver (Exclamation Point edit based on game)
+- Alert (Exclamation Point edit based on game)
+- GameOverScreen (Screenshot from game)
